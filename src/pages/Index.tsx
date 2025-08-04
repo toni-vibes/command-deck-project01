@@ -18,9 +18,7 @@ const Index = () => {
 
   // Save tasks to localStorage whenever tasks change
   useEffect(() => {
-    if (implementedTasks.length > 0) {
-      localStorage.setItem('currentTasks', JSON.stringify(implementedTasks));
-    }
+    localStorage.setItem('currentTasks', JSON.stringify(implementedTasks));
   }, [implementedTasks]);
 
   // Task History management functions

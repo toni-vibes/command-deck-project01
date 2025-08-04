@@ -60,40 +60,6 @@ export const TaskViews = ({ tasks = [], onTasksChange }: TaskViewsProps) => {
     })
   );
 
-  // Default tasks if none provided
-  const defaultTasks: Task[] = [
-    {
-      id: "default-1",
-      title: "Complete user research",
-      description: "Research target audience and user needs",
-      assignee: "Sarah Chen",
-      dueDate: "Today",
-      timeEstimate: "2 days",
-      status: "In Progress",
-      priority: "High"
-    },
-    {
-      id: "default-2",
-      title: "Design wireframes",
-      description: "Create initial wireframes and mockups",
-      assignee: "Alex Johnson",
-      dueDate: "Tomorrow",
-      timeEstimate: "3 days",
-      status: "To Do",
-      priority: "Medium"
-    },
-    {
-      id: "default-3",
-      title: "Develop prototype",
-      description: "Build working prototype",
-      assignee: "Mike Rodriguez",
-      dueDate: "Next week",
-      timeEstimate: "1 week",
-      status: "To Do",
-      priority: "Medium"
-    }
-  ];
-
   const displayTasks = tasks;
 
   const handleDeleteTask = (taskId: string) => {
