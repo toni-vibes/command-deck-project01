@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Calendar, User, Clock } from "lucide-react";
+import { ArrowLeft, Calendar, User, Clock, RotateCcw } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Task } from "@/types/task";
 
@@ -17,6 +17,30 @@ const TaskHistory = () => {
       setCompletedTasks(JSON.parse(savedHistory));
     }
   }, []);
+
+  const restoreTask = (taskToRestore: Task) => {
+    // Remove task from history
+    const updatedHistory = completedTasks.filter(task => task.id !== taskToRestore.id);
+    setCompletedTasks(updatedHistory);
+    localStorage.setItem('taskHistory', JSON.stringify(updatedHistory));
+
+    // Add task back to current tasks
+    const savedTasks = localStorage.getItem('currentTasks');
+    const currentTasks = savedTasks ? JSON.parse(savedTasks) : [];
+    
+    // Reset task status and remove completion timestamp
+    const restoredTask = { 
+      ...taskToRestore, 
+      status: "To Do" as const,
+      completedAt: undefined
+    };
+    
+    const updatedCurrentTasks = [...currentTasks, restoredTask];
+    localStorage.setItem('currentTasks', JSON.stringify(updatedCurrentTasks));
+    
+    // Navigate back to main page
+    navigate('/');
+  };
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
@@ -90,6 +114,15 @@ const TaskHistory = () => {
                         </Badge>
                       </div>
                     </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => restoreTask(task)}
+                      className="flex items-center gap-2"
+                    >
+                      <RotateCcw className="h-4 w-4" />
+                      Restore
+                    </Button>
                   </div>
                   
                   {task.description && (
