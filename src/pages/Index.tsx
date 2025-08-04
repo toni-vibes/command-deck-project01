@@ -1,9 +1,16 @@
+import { useState } from "react";
 import { GoalBreakdown } from "@/components/GoalBreakdown";
 import { TaskViews } from "@/components/TaskViews";
 import { TeamWorkload } from "@/components/TeamWorkload";
 import { ActionButtons } from "@/components/ActionButtons";
+import { Task } from "@/types/task";
 
 const Index = () => {
+  const [implementedTasks, setImplementedTasks] = useState<Task[]>([]);
+
+  const handlePlanImplemented = (tasks: Task[]) => {
+    setImplementedTasks(tasks);
+  };
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
@@ -20,10 +27,10 @@ const Index = () => {
       <main className="max-w-7xl mx-auto px-6 py-8">
         <div className="space-y-12">
           {/* Section 1: Goal Breakdown */}
-          <GoalBreakdown />
+          <GoalBreakdown onPlanImplemented={handlePlanImplemented} />
 
           {/* Section 2: Task Views */}
-          <TaskViews />
+          <TaskViews tasks={implementedTasks} />
 
           {/* Section 3: Team Workload */}
           <TeamWorkload />
