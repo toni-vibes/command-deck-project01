@@ -10,6 +10,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Task } from "@/types/task";
 import { Pencil, Trash2 } from "lucide-react";
 import { EditTaskForm } from "./EditTaskForm";
+import { AddTaskForm } from "./AddTaskForm";
+import { Plus } from "lucide-react";
 
 interface GoalBreakdownProps {
   onPlanImplemented?: (tasks: Task[]) => void;
@@ -20,6 +22,7 @@ export const GoalBreakdown = ({ onPlanImplemented }: GoalBreakdownProps) => {
   const [planGenerated, setPlanGenerated] = useState(false);
   const [generatedTasks, setGeneratedTasks] = useState<Task[]>([]);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
+  const [showAddTask, setShowAddTask] = useState(false);
 
   const generateTasksFromGoal = (goalText: string): Task[] => {
     // Simple goal analysis to generate tasks
@@ -204,6 +207,11 @@ export const GoalBreakdown = ({ onPlanImplemented }: GoalBreakdownProps) => {
     setEditingTask(null);
   };
 
+  const handleAddTask = (newTask: Task) => {
+    setGeneratedTasks(tasks => [...tasks, newTask]);
+    setShowAddTask(false);
+  };
+
   const getPriorityColor = (priority: string) => {
     switch (priority) {
       case "High": return "bg-destructive/10 text-destructive border-destructive/20";
@@ -234,9 +242,29 @@ export const GoalBreakdown = ({ onPlanImplemented }: GoalBreakdownProps) => {
         </Button>
       </div>
 
-      {planGenerated && (
+      {(planGenerated || generatedTasks.length > 0) && (
         <Card className="p-6 bg-surface border-border">
-          <h3 className="font-medium text-text-primary mb-6">Plan Preview</h3>
+          <div className="flex justify-between items-center mb-6">
+            <h3 className="font-medium text-text-primary">Plan Preview</h3>
+            <Dialog open={showAddTask} onOpenChange={setShowAddTask}>
+              <DialogTrigger asChild>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  className="flex items-center gap-2"
+                >
+                  <Plus className="h-4 w-4" />
+                  Add Task
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Add New Task</DialogTitle>
+                </DialogHeader>
+                <AddTaskForm onSave={handleAddTask} onCancel={() => setShowAddTask(false)} />
+              </DialogContent>
+            </Dialog>
+          </div>
           
           <div className="space-y-4">
             {generatedTasks.length === 0 ? (

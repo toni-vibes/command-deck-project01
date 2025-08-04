@@ -3,8 +3,9 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Task } from "@/types/task";
-import { Pencil, Trash2 } from "lucide-react";
+import { Pencil, Trash2, Plus } from "lucide-react";
 import { EditTaskForm } from "./EditTaskForm";
+import { AddTaskForm } from "./AddTaskForm";
 
 type ViewType = "timeline" | "kanban" | "table";
 
@@ -16,6 +17,7 @@ interface TaskViewsProps {
 export const TaskViews = ({ tasks = [], onTasksChange }: TaskViewsProps) => {
   const [activeView, setActiveView] = useState<ViewType>("timeline");
   const [editingTask, setEditingTask] = useState<Task | null>(null);
+  const [showAddTask, setShowAddTask] = useState(false);
 
   // Default tasks if none provided
   const defaultTasks: Task[] = [
@@ -68,6 +70,14 @@ export const TaskViews = ({ tasks = [], onTasksChange }: TaskViewsProps) => {
       onTasksChange(updatedTasks);
     }
     setEditingTask(null);
+  };
+
+  const handleAddTask = (newTask: Task) => {
+    const updatedTasks = [...displayTasks, newTask];
+    if (onTasksChange) {
+      onTasksChange(updatedTasks);
+    }
+    setShowAddTask(false);
   };
 
   const TaskActions = ({ task }: { task: Task }) => (
@@ -242,31 +252,51 @@ export const TaskViews = ({ tasks = [], onTasksChange }: TaskViewsProps) => {
         <div className="space-y-4">
           <div className="flex items-center justify-between border-b border-divider pb-4">
             <h3 className="font-medium text-text-primary">Plan Views</h3>
-            <div className="flex bg-muted rounded-lg p-1">
-              <Button
-                variant={activeView === "timeline" ? "default" : "ghost"}
-                size="sm"
-                onClick={() => setActiveView("timeline")}
-                className="text-xs"
-              >
-                Timeline
-              </Button>
-              <Button
-                variant={activeView === "kanban" ? "default" : "ghost"}
-                size="sm"
-                onClick={() => setActiveView("kanban")}
-                className="text-xs"
-              >
-                Kanban
-              </Button>
-              <Button
-                variant={activeView === "table" ? "default" : "ghost"}
-                size="sm"
-                onClick={() => setActiveView("table")}
-                className="text-xs"
-              >
-                Table
-              </Button>
+            <div className="flex items-center gap-3">
+              <Dialog open={showAddTask} onOpenChange={setShowAddTask}>
+                <DialogTrigger asChild>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    className="flex items-center gap-2"
+                  >
+                    <Plus className="h-4 w-4" />
+                    Add Task
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Add New Task</DialogTitle>
+                  </DialogHeader>
+                  <AddTaskForm onSave={handleAddTask} onCancel={() => setShowAddTask(false)} />
+                </DialogContent>
+              </Dialog>
+              <div className="flex bg-muted rounded-lg p-1">
+                <Button
+                  variant={activeView === "timeline" ? "default" : "ghost"}
+                  size="sm"
+                  onClick={() => setActiveView("timeline")}
+                  className="text-xs"
+                >
+                  Timeline
+                </Button>
+                <Button
+                  variant={activeView === "kanban" ? "default" : "ghost"}
+                  size="sm"
+                  onClick={() => setActiveView("kanban")}
+                  className="text-xs"
+                >
+                  Kanban
+                </Button>
+                <Button
+                  variant={activeView === "table" ? "default" : "ghost"}
+                  size="sm"
+                  onClick={() => setActiveView("table")}
+                  className="text-xs"
+                >
+                  Table
+                </Button>
+              </div>
             </div>
           </div>
           
