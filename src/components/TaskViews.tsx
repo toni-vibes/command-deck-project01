@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Task } from "@/types/task";
 import { Pencil, Trash2, Plus } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { EditTaskForm } from "./EditTaskForm";
 import { AddTaskForm } from "./AddTaskForm";
 
@@ -18,6 +19,7 @@ export const TaskViews = ({ tasks = [], onTasksChange }: TaskViewsProps) => {
   const [activeView, setActiveView] = useState<ViewType>("timeline");
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [showAddTask, setShowAddTask] = useState(false);
+  const [viewingTask, setViewingTask] = useState<Task | null>(null);
 
   // Default tasks if none provided
   const defaultTasks: Task[] = [
@@ -119,10 +121,15 @@ export const TaskViews = ({ tasks = [], onTasksChange }: TaskViewsProps) => {
             <div className={`absolute -left-6 w-3 h-3 rounded-full ${
               task.status === "In Progress" ? "bg-primary" : "bg-muted"
             }`}></div>
-            <div className="bg-surface-elevated p-4 rounded-lg border">
+            <div 
+              className="bg-surface-elevated p-4 rounded-lg border cursor-pointer hover:bg-surface-elevated/80 transition-colors"
+              onClick={() => setViewingTask(task)}
+            >
               <div className="flex justify-between items-start mb-2">
                 <h4 className="font-medium text-text-primary">{task.title}</h4>
-                <TaskActions task={task} />
+                <div onClick={(e) => e.stopPropagation()}>
+                  <TaskActions task={task} />
+                </div>
               </div>
               <p className="text-sm text-text-secondary">
                 Due: {task.dueDate} | {task.assignee} | {task.timeEstimate}
@@ -145,10 +152,16 @@ export const TaskViews = ({ tasks = [], onTasksChange }: TaskViewsProps) => {
           <h4 className="font-medium text-text-primary">To Do</h4>
           <div className="space-y-2">
             {todoTasks.map(task => (
-              <div key={task.id} className="bg-surface-elevated p-3 rounded-lg border">
+              <div 
+                key={task.id} 
+                className="bg-surface-elevated p-3 rounded-lg border cursor-pointer hover:bg-surface-elevated/80 transition-colors"
+                onClick={() => setViewingTask(task)}
+              >
                 <div className="flex justify-between items-start mb-1">
                   <p className="text-sm font-medium">{task.title}</p>
-                  <TaskActions task={task} />
+                  <div onClick={(e) => e.stopPropagation()}>
+                    <TaskActions task={task} />
+                  </div>
                 </div>
                 <p className="text-xs text-text-secondary">{task.priority} priority | {task.assignee}</p>
               </div>
@@ -159,10 +172,16 @@ export const TaskViews = ({ tasks = [], onTasksChange }: TaskViewsProps) => {
           <h4 className="font-medium text-text-primary">In Progress</h4>
           <div className="space-y-2">
             {inProgressTasks.map(task => (
-              <div key={task.id} className="bg-surface-elevated p-3 rounded-lg border">
+              <div 
+                key={task.id} 
+                className="bg-surface-elevated p-3 rounded-lg border cursor-pointer hover:bg-surface-elevated/80 transition-colors"
+                onClick={() => setViewingTask(task)}
+              >
                 <div className="flex justify-between items-start mb-1">
                   <p className="text-sm font-medium">{task.title}</p>
-                  <TaskActions task={task} />
+                  <div onClick={(e) => e.stopPropagation()}>
+                    <TaskActions task={task} />
+                  </div>
                 </div>
                 <p className="text-xs text-text-secondary">{task.assignee} | Due: {task.dueDate}</p>
               </div>
@@ -173,10 +192,16 @@ export const TaskViews = ({ tasks = [], onTasksChange }: TaskViewsProps) => {
           <h4 className="font-medium text-text-primary">Done</h4>
           <div className="space-y-2">
             {doneTasks.map(task => (
-              <div key={task.id} className="bg-surface-elevated p-3 rounded-lg border">
+              <div 
+                key={task.id} 
+                className="bg-surface-elevated p-3 rounded-lg border cursor-pointer hover:bg-surface-elevated/80 transition-colors"
+                onClick={() => setViewingTask(task)}
+              >
                 <div className="flex justify-between items-start mb-1">
                   <p className="text-sm font-medium">{task.title}</p>
-                  <TaskActions task={task} />
+                  <div onClick={(e) => e.stopPropagation()}>
+                    <TaskActions task={task} />
+                  </div>
                 </div>
                 <p className="text-xs text-text-secondary">Completed | {task.assignee}</p>
               </div>
@@ -211,7 +236,11 @@ export const TaskViews = ({ tasks = [], onTasksChange }: TaskViewsProps) => {
         </thead>
         <tbody>
           {displayTasks.map(task => (
-            <tr key={task.id} className="border-b border-divider">
+            <tr 
+              key={task.id} 
+              className="border-b border-divider cursor-pointer hover:bg-surface-elevated/50 transition-colors"
+              onClick={() => setViewingTask(task)}
+            >
               <td className="py-3 px-2 text-text-primary">{task.title}</td>
               <td className="py-3 px-2 text-text-secondary">{task.assignee}</td>
               <td className="py-3 px-2">
@@ -221,7 +250,7 @@ export const TaskViews = ({ tasks = [], onTasksChange }: TaskViewsProps) => {
               </td>
               <td className="py-3 px-2 text-text-secondary">{task.dueDate}</td>
               <td className="py-3 px-2 text-text-secondary">{task.timeEstimate}</td>
-              <td className="py-3 px-2">
+              <td className="py-3 px-2" onClick={(e) => e.stopPropagation()}>
                 <TaskActions task={task} />
               </td>
             </tr>
@@ -311,6 +340,64 @@ export const TaskViews = ({ tasks = [], onTasksChange }: TaskViewsProps) => {
           </div>
         </div>
       </Card>
+
+      {/* Task Details Dialog */}
+      <Dialog open={!!viewingTask} onOpenChange={() => setViewingTask(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Task Details</DialogTitle>
+          </DialogHeader>
+          {viewingTask && (
+            <div className="space-y-4">
+              <div>
+                <h4 className="font-medium text-text-primary text-lg">{viewingTask.title}</h4>
+                <div className="flex items-center gap-2 mt-2">
+                  <Badge className={`${
+                    viewingTask.priority === "High" ? "bg-destructive/10 text-destructive border-destructive/20" :
+                    viewingTask.priority === "Medium" ? "bg-secondary text-secondary-foreground" :
+                    "bg-muted text-muted-foreground"
+                  }`}>
+                    {viewingTask.priority}
+                  </Badge>
+                  <Badge className={`${
+                    viewingTask.status === "In Progress" ? "bg-primary/10 text-primary" :
+                    viewingTask.status === "Done" ? "bg-green-100 text-green-700" :
+                    "bg-muted text-text-secondary"
+                  }`}>
+                    {viewingTask.status}
+                  </Badge>
+                </div>
+              </div>
+              
+              {viewingTask.description && (
+                <div>
+                  <h5 className="font-medium text-text-primary mb-2">Description</h5>
+                  <p className="text-sm text-text-secondary">{viewingTask.description}</p>
+                </div>
+              )}
+              
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <span className="font-medium text-text-primary">Assignee:</span>
+                  <p className="text-text-secondary">{viewingTask.assignee}</p>
+                </div>
+                <div>
+                  <span className="font-medium text-text-primary">Due Date:</span>
+                  <p className="text-text-secondary">{viewingTask.dueDate}</p>
+                </div>
+                <div>
+                  <span className="font-medium text-text-primary">Time Estimate:</span>
+                  <p className="text-text-secondary">{viewingTask.timeEstimate}</p>
+                </div>
+                <div>
+                  <span className="font-medium text-text-primary">Status:</span>
+                  <p className="text-text-secondary">{viewingTask.status}</p>
+                </div>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </section>
   );
 };

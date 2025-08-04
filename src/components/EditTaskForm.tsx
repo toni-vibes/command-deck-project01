@@ -1,9 +1,14 @@
 import { useState, useEffect } from "react";
+import { format, parseISO } from "date-fns";
+import { CalendarIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { cn } from "@/lib/utils";
 import { Task } from "@/types/task";
 
 interface EditTaskFormProps {
@@ -13,14 +18,30 @@ interface EditTaskFormProps {
 
 export const EditTaskForm = ({ task, onSave }: EditTaskFormProps) => {
   const [formData, setFormData] = useState<Task>(task);
+  const [selectedDate, setSelectedDate] = useState<Date>();
 
   useEffect(() => {
     setFormData(task);
+    // Try to parse existing date if it's in a valid format
+    if (task.dueDate) {
+      try {
+        const parsedDate = new Date(task.dueDate);
+        if (!isNaN(parsedDate.getTime())) {
+          setSelectedDate(parsedDate);
+        }
+      } catch (error) {
+        // If date parsing fails, leave selectedDate undefined
+      }
+    }
   }, [task]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSave(formData);
+    const updatedTask = {
+      ...formData,
+      dueDate: selectedDate ? format(selectedDate, "PPP") : formData.dueDate
+    };
+    onSave(updatedTask);
   };
 
   const teamMembers = ["Sarah Chen", "Alex Johnson", "Mike Rodriguez", "Emma Davis"];
@@ -86,12 +107,30 @@ export const EditTaskForm = ({ task, onSave }: EditTaskFormProps) => {
 
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
-          <Label htmlFor="dueDate">Due Date</Label>
-          <Input
-            id="dueDate"
-            value={formData.dueDate}
-            onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
-          />
+          <Label>Due Date</Label>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                className={cn(
+                  "w-full justify-start text-left font-normal",
+                  !selectedDate && "text-muted-foreground"
+                )}
+              >
+                <CalendarIcon className="mr-2 h-4 w-4" />
+                {selectedDate ? format(selectedDate, "PPP") : <span>Pick a date</span>}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <Calendar
+                mode="single"
+                selected={selectedDate}
+                onSelect={setSelectedDate}
+                initialFocus
+                className={cn("p-3 pointer-events-auto")}
+              />
+            </PopoverContent>
+          </Popover>
         </div>
 
         <div className="space-y-2">

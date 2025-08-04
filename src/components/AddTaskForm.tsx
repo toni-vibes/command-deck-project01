@@ -1,9 +1,14 @@
 import { useState } from "react";
+import { format } from "date-fns";
+import { CalendarIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { cn } from "@/lib/utils";
 import { Task } from "@/types/task";
 
 interface AddTaskFormProps {
@@ -21,12 +26,14 @@ export const AddTaskForm = ({ onSave, onCancel }: AddTaskFormProps) => {
     status: "To Do",
     priority: "Medium"
   });
+  const [selectedDate, setSelectedDate] = useState<Date>();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (formData.title.trim() && formData.assignee) {
       const newTask: Task = {
         ...formData,
+        dueDate: selectedDate ? format(selectedDate, "PPP") : formData.dueDate,
         id: `task-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
       };
       onSave(newTask);
@@ -99,13 +106,30 @@ export const AddTaskForm = ({ onSave, onCancel }: AddTaskFormProps) => {
 
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
-          <Label htmlFor="dueDate">Due Date</Label>
-          <Input
-            id="dueDate"
-            value={formData.dueDate}
-            onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
-            placeholder="e.g., Tomorrow, Next week"
-          />
+          <Label>Due Date</Label>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                className={cn(
+                  "w-full justify-start text-left font-normal",
+                  !selectedDate && "text-muted-foreground"
+                )}
+              >
+                <CalendarIcon className="mr-2 h-4 w-4" />
+                {selectedDate ? format(selectedDate, "PPP") : <span>Pick a date</span>}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <Calendar
+                mode="single"
+                selected={selectedDate}
+                onSelect={setSelectedDate}
+                initialFocus
+                className={cn("p-3 pointer-events-auto")}
+              />
+            </PopoverContent>
+          </Popover>
         </div>
 
         <div className="space-y-2">
