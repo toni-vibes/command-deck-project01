@@ -43,7 +43,7 @@ export const GoalBreakdown = ({ onPlanImplemented, currentTasks = [] }: GoalBrea
           title: "Research and Planning",
           description: "Conduct market research and define requirements",
           assignee: teamMembers[0],
-          dueDate: "2024-01-15",
+          dueDate: "2025-08-15",
           timeEstimate: "1 week",
           status: "To Do",
           priority: "High"
@@ -53,7 +53,7 @@ export const GoalBreakdown = ({ onPlanImplemented, currentTasks = [] }: GoalBrea
           title: "Design System",
           description: "Create wireframes and design mockups",
           assignee: teamMembers[1],
-          dueDate: "2024-01-22",
+          dueDate: "2025-08-22",
           timeEstimate: "1.5 weeks",
           status: "To Do",
           priority: "High"
@@ -63,7 +63,7 @@ export const GoalBreakdown = ({ onPlanImplemented, currentTasks = [] }: GoalBrea
           title: "Backend Development",
           description: "Set up database and API endpoints",
           assignee: teamMembers[2],
-          dueDate: "2024-02-05",
+          dueDate: "2025-09-05",
           timeEstimate: "2 weeks",
           status: "To Do",
           priority: "Medium"
@@ -73,7 +73,7 @@ export const GoalBreakdown = ({ onPlanImplemented, currentTasks = [] }: GoalBrea
           title: "Frontend Implementation",
           description: "Build user interface components",
           assignee: teamMembers[1],
-          dueDate: "2024-02-19",
+          dueDate: "2025-09-19",
           timeEstimate: "2 weeks",
           status: "To Do",
           priority: "Medium"
@@ -83,7 +83,7 @@ export const GoalBreakdown = ({ onPlanImplemented, currentTasks = [] }: GoalBrea
           title: "Testing & QA",
           description: "Comprehensive testing and bug fixes",
           assignee: teamMembers[3],
-          dueDate: "2024-02-26",
+          dueDate: "2025-09-26",
           timeEstimate: "1 week",
           status: "To Do",
           priority: "High"
@@ -96,7 +96,7 @@ export const GoalBreakdown = ({ onPlanImplemented, currentTasks = [] }: GoalBrea
           title: "Market Analysis",
           description: "Analyze target audience and competitors",
           assignee: teamMembers[0],
-          dueDate: "2024-01-12",
+          dueDate: "2025-08-12",
           timeEstimate: "3 days",
           status: "To Do",
           priority: "High"
@@ -106,7 +106,7 @@ export const GoalBreakdown = ({ onPlanImplemented, currentTasks = [] }: GoalBrea
           title: "Content Strategy",
           description: "Develop content calendar and messaging",
           assignee: teamMembers[1],
-          dueDate: "2024-01-19",
+          dueDate: "2025-08-19",
           timeEstimate: "1 week",
           status: "To Do",
           priority: "Medium"
@@ -116,7 +116,7 @@ export const GoalBreakdown = ({ onPlanImplemented, currentTasks = [] }: GoalBrea
           title: "Creative Assets",
           description: "Design graphics and marketing materials",
           assignee: teamMembers[1],
-          dueDate: "2024-01-26",
+          dueDate: "2025-08-26",
           timeEstimate: "1 week",
           status: "To Do",
           priority: "Medium"
@@ -126,7 +126,7 @@ export const GoalBreakdown = ({ onPlanImplemented, currentTasks = [] }: GoalBrea
           title: "Campaign Launch",
           description: "Execute marketing campaign across channels",
           assignee: teamMembers[2],
-          dueDate: "2024-02-02",
+          dueDate: "2025-09-02",
           timeEstimate: "1 week",
           status: "To Do",
           priority: "High"
@@ -140,7 +140,7 @@ export const GoalBreakdown = ({ onPlanImplemented, currentTasks = [] }: GoalBrea
           title: "Initial Planning",
           description: "Define scope and create project roadmap",
           assignee: teamMembers[0],
-          dueDate: "2024-01-10",
+          dueDate: "2025-08-10",
           timeEstimate: "2 days",
           status: "To Do",
           priority: "High"
@@ -150,7 +150,7 @@ export const GoalBreakdown = ({ onPlanImplemented, currentTasks = [] }: GoalBrea
           title: "Resource Allocation",
           description: "Assign team members and allocate budget",
           assignee: teamMembers[0],
-          dueDate: "2024-01-15",
+          dueDate: "2025-08-15",
           timeEstimate: "1 day",
           status: "To Do",
           priority: "Medium"
@@ -160,7 +160,7 @@ export const GoalBreakdown = ({ onPlanImplemented, currentTasks = [] }: GoalBrea
           title: "Execution Phase 1",
           description: "Begin implementation of core components",
           assignee: teamMembers[2],
-          dueDate: "2024-01-29",
+          dueDate: "2025-08-29",
           timeEstimate: "2 weeks",
           status: "To Do",
           priority: "High"
@@ -170,7 +170,7 @@ export const GoalBreakdown = ({ onPlanImplemented, currentTasks = [] }: GoalBrea
           title: "Review & Optimization",
           description: "Evaluate progress and optimize approach",
           assignee: teamMembers[3],
-          dueDate: "2024-02-05",
+          dueDate: "2025-09-05",
           timeEstimate: "1 week",
           status: "To Do",
           priority: "Medium"

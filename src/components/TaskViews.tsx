@@ -235,7 +235,7 @@ export const TaskViews = ({ tasks = [], onTasksChange }: TaskViewsProps) => {
     
     // If no tasks, show the default view with current month
     if (displayTasks.length === 0) {
-      const today = new Date();
+      const today = new Date(2025, 7, 4); // August 4, 2025 (month is 0-indexed)
       const currentMonth = startOfMonth(today);
       const nextMonth = startOfMonth(addDays(today, 32));
       const months = [currentMonth, nextMonth];
@@ -286,7 +286,7 @@ export const TaskViews = ({ tasks = [], onTasksChange }: TaskViewsProps) => {
     
     // Helper function to parse task dates with fallbacks
     const parseTaskDate = (dueDate: string) => {
-      const today = new Date();
+      const today = new Date(2025, 7, 4); // August 4, 2025
       
       // Handle common date formats
       const normalized = dueDate.toLowerCase().trim();
@@ -326,7 +326,7 @@ export const TaskViews = ({ tasks = [], onTasksChange }: TaskViewsProps) => {
 
     // Calculate date range from all tasks
     const taskDates = displayTasks.map(task => parseTaskDate(task.dueDate));
-    const today = new Date();
+    const today = new Date(2025, 7, 4); // August 4, 2025
     
     // Add buffer months around task dates
     const allDates = [...taskDates, today, addDays(today, -30), addDays(today, 30)];
@@ -472,12 +472,12 @@ export const TaskViews = ({ tasks = [], onTasksChange }: TaskViewsProps) => {
                   
                   {/* Today Line */}
                   {(() => {
-                    const todayMonth = startOfMonth(new Date());
+                    const todayMonth = startOfMonth(new Date(2025, 7, 4)); // August 4, 2025
                     const monthIndex = months.findIndex(month => 
                       month.getTime() === todayMonth.getTime()
                     );
                     if (monthIndex !== -1) {
-                      const today = new Date();
+                      const today = new Date(2025, 7, 4); // August 4, 2025
                       const dayOfMonth = today.getDate();
                       const daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
                       const todayPosition = monthIndex * 200 + (dayOfMonth / daysInMonth) * 200;
