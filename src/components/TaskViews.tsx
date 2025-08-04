@@ -2,10 +2,12 @@ import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { Task } from "@/types/task";
 import { Pencil, Trash2, Plus, History } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { format, startOfMonth, endOfMonth, eachMonthOfInterval, parseISO, addDays, differenceInDays, isToday } from "date-fns";
 import { EditTaskForm } from "./EditTaskForm";
 import { AddTaskForm } from "./AddTaskForm";
 import { SortableTaskCard } from "./SortableTaskCard";
@@ -262,36 +264,78 @@ export const TaskViews = ({ tasks = [], onTasksChange }: TaskViewsProps) => {
   );
 
   const renderTimelineView = () => {
-    // Generate months for the timeline header
-    const currentDate = new Date();
-    const months = [];
-    for (let i = -1; i <= 3; i++) {
-      const monthDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + i, 1);
-      months.push({
-        name: monthDate.toLocaleDateString('en-US', { month: 'long' }),
-        year: monthDate.getFullYear(),
-        isCurrentMonth: i === 0
-      });
-    }
+    // Helper function to parse task dates with fallbacks
+    const parseTaskDate = (dueDate: string) => {
+      const today = new Date();
+      
+      // Handle common date formats
+      const normalized = dueDate.toLowerCase().trim();
+      
+      if (normalized === 'today') {
+        return today;
+      } else if (normalized === 'tomorrow') {
+        return addDays(today, 1);
+      } else if (normalized === 'next week') {
+        return addDays(today, 7);
+      } else if (normalized === 'this week') {
+        return addDays(today, 3);
+      } else {
+        // Try to parse as ISO date or common date formats
+        try {
+          const parsed = parseISO(dueDate);
+          if (!isNaN(parsed.getTime())) {
+            return parsed;
+          }
+        } catch (e) {
+          // Fallback to today if parsing fails
+        }
+        
+        // Try parsing with Date constructor as fallback
+        try {
+          const fallback = new Date(dueDate);
+          if (!isNaN(fallback.getTime())) {
+            return fallback;
+          }
+        } catch (e) {
+          // Ultimate fallback
+        }
+        
+        return addDays(today, 7); // Default to next week
+      }
+    };
 
-    // Generate weeks within the timeline
-    const weeks = [];
-    for (let i = -4; i <= 12; i++) {
-      const weekDate = new Date();
-      weekDate.setDate(weekDate.getDate() + (i * 7));
-      weeks.push(weekDate.getDate());
-    }
-
+    // Calculate date range from all tasks
+    const taskDates = displayTasks.map(task => parseTaskDate(task.dueDate));
+    const today = new Date();
+    
+    // Add buffer months around task dates
+    const allDates = [...taskDates, today, addDays(today, -30), addDays(today, 30)];
+    const minDate = new Date(Math.min(...allDates.map(d => d.getTime())));
+    const maxDate = new Date(Math.max(...allDates.map(d => d.getTime())));
+    
+    // Generate months spanning the range
+    const startMonth = startOfMonth(minDate);
+    const endMonth = endOfMonth(maxDate);
+    const months = eachMonthOfInterval({ start: startMonth, end: endMonth });
+    
+    // Calculate total timeline width (200px per month)
+    const totalWidth = months.length * 200;
+    
     const getTaskColor = (task: Task) => {
-      if (task.status === "Done") return "bg-green-500";
-      if (task.status === "In Progress") return "bg-blue-500";
-      if (task.priority === "High") return "bg-red-500";
-      if (task.priority === "Medium") return "bg-yellow-500";
-      return "bg-purple-500";
+      const colors = {
+        "Done": "from-emerald-500 to-emerald-600",
+        "In Progress": "from-blue-500 to-blue-600", 
+        "High": "from-red-500 to-red-600",
+        "Medium": "from-amber-500 to-amber-600",
+        "Low": "from-purple-500 to-purple-600"
+      };
+      
+      if (task.status === "Done") return colors["Done"];
+      if (task.status === "In Progress") return colors["In Progress"];
+      return colors[task.priority] || colors["Low"];
     };
 
     const getTaskDuration = (task: Task) => {
-      // Convert time estimate to days for visual representation
       const estimate = task.timeEstimate.toLowerCase();
       if (estimate.includes('week')) {
         const weeks = parseInt(estimate) || 1;
@@ -299,104 +343,183 @@ export const TaskViews = ({ tasks = [], onTasksChange }: TaskViewsProps) => {
       } else if (estimate.includes('day')) {
         return parseInt(estimate) || 1;
       }
-      return 3; // Default 3 days
+      return 5; // Default 5 days
     };
 
-    const getTaskOffset = (index: number) => {
-      // Stagger tasks across timeline for visual variety
-      return (index * 10) % 60;
+    const getTaskPosition = (task: Task, months: Date[]) => {
+      const taskDate = parseTaskDate(task.dueDate);
+      const duration = getTaskDuration(task);
+      
+      // Find which month this task starts in
+      const taskMonth = startOfMonth(taskDate);
+      const monthIndex = months.findIndex(month => 
+        month.getTime() === taskMonth.getTime()
+      );
+      
+      if (monthIndex === -1) return null;
+      
+      // Calculate position within the month
+      const dayOfMonth = taskDate.getDate();
+      const daysInMonth = new Date(taskDate.getFullYear(), taskDate.getMonth() + 1, 0).getDate();
+      const positionInMonth = (dayOfMonth / daysInMonth) * 200; // 200px per month
+      
+      return {
+        left: monthIndex * 200 + positionInMonth,
+        width: Math.max(duration * 6, 40), // Min 40px width
+        monthIndex
+      };
     };
 
     return (
       <div className="space-y-4">
-        {/* Timeline Header */}
+        {/* Gantt Chart Container */}
         <div className="bg-surface-elevated border border-border rounded-lg overflow-hidden">
-          {/* Month Headers */}
-          <div className="grid grid-cols-5 border-b border-border">
-            <div className="p-3 bg-muted"></div>
-            {months.map((month, index) => (
-              <div key={index} className="p-3 text-center border-l border-border bg-muted">
-                <div className="font-medium text-text-primary">{month.name}</div>
-                <div className="text-xs text-text-secondary">{month.year}</div>
+          {/* Fixed Task Names Column + Scrollable Timeline */}
+          <div className="flex">
+            {/* Fixed Task Names Column */}
+            <div className="w-80 bg-muted border-r border-border flex-shrink-0">
+              {/* Header */}
+              <div className="p-4 border-b border-border">
+                <div className="font-medium text-text-primary">Tasks</div>
+                <div className="text-xs text-text-secondary">{displayTasks.length} records</div>
               </div>
-            ))}
-          </div>
-
-          {/* Week Grid */}
-          <div className="grid grid-cols-5 border-b border-border">
-            <div className="p-2 bg-surface text-xs text-text-secondary">
-              {displayTasks.length} records
-            </div>
-            {months.map((month, monthIndex) => (
-              <div key={monthIndex} className="border-l border-border bg-surface">
-                <div className="grid grid-cols-4 h-8">
-                  {[1, 2, 3, 4].map((week) => (
-                    <div key={week} className="border-r border-border/30 text-center text-xs text-text-secondary flex items-center justify-center">
-                      {week * 7}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {/* Tasks */}
-          <div className="max-h-96 overflow-y-auto">
-            {displayTasks.map((task, index) => (
-              <div 
-                key={task.id}
-                className={`grid grid-cols-5 border-b border-border/30 hover:bg-surface-elevated/50 transition-all duration-300 ${
-                  removingTasks.has(task.id) ? 'opacity-0 scale-95 translate-y-2' : 'opacity-100 scale-100 translate-y-0'
-                }`}
-              >
-                {/* Task Name Column */}
-                <div className="p-3 flex items-center justify-between">
+              
+              {/* Task List */}
+              <div className="max-h-96 overflow-y-auto">
+                {displayTasks.map((task) => (
                   <div 
-                    className="cursor-pointer flex-1"
-                    onClick={() => setViewingTask(task)}
+                    key={task.id}
+                    className={`p-4 border-b border-border/30 hover:bg-surface-elevated/50 transition-all duration-300 ${
+                      removingTasks.has(task.id) ? 'opacity-0 scale-95 translate-y-2' : 'opacity-100 scale-100 translate-y-0'
+                    }`}
                   >
-                    <div className="font-medium text-text-primary text-sm">{task.title}</div>
-                    <div className="text-xs text-text-secondary">{task.assignee}</div>
-                  </div>
-                  <div onClick={(e) => e.stopPropagation()}>
-                    <TaskActions task={task} />
-                  </div>
-                </div>
-
-                {/* Timeline Columns */}
-                {months.map((month, monthIndex) => (
-                  <div key={monthIndex} className="relative border-l border-border p-2">
-                    {/* Task Bar - only show in appropriate month */}
-                    {monthIndex === 1 + (index % 2) && (
-                      <div className="relative h-6 flex items-center">
-                        <div 
-                          className={`h-4 rounded ${getTaskColor(task)} relative transition-all duration-200 hover:scale-105 cursor-pointer`}
-                          style={{
-                            width: `${Math.min(getTaskDuration(task) * 8, 90)}%`,
-                            marginLeft: `${getTaskOffset(index)}%`
-                          }}
-                          onClick={() => setViewingTask(task)}
-                        >
-                          <div className="absolute inset-0 bg-white/20 rounded"></div>
-                          <div className="relative px-2 text-white text-xs font-medium truncate">
-                            {task.title}
-                          </div>
+                    <div className="flex items-center justify-between">
+                      <div 
+                        className="cursor-pointer flex-1"
+                        onClick={() => setViewingTask(task)}
+                      >
+                        <div className="font-medium text-text-primary text-sm mb-1">{task.title}</div>
+                        <div className="text-xs text-text-secondary">{task.assignee}</div>
+                        <div className="flex items-center gap-2 mt-2">
+                          <Badge variant="outline" className="text-xs">
+                            {task.status}
+                          </Badge>
+                          <Badge variant="outline" className={`text-xs ${
+                            task.priority === "High" ? "border-red-200 text-red-700" :
+                            task.priority === "Medium" ? "border-amber-200 text-amber-700" :
+                            "border-gray-200 text-gray-700"
+                          }`}>
+                            {task.priority}
+                          </Badge>
                         </div>
                       </div>
-                    )}
-                    
-                    {/* Today marker */}
-                    {month.isCurrentMonth && monthIndex === 1 && (
-                      <div className="absolute top-0 left-1/2 w-px h-full bg-primary opacity-50">
-                        <div className="absolute -top-2 -left-6 text-xs text-primary font-medium">
-                          Today
-                        </div>
+                      <div onClick={(e) => e.stopPropagation()}>
+                        <TaskActions task={task} />
                       </div>
-                    )}
+                    </div>
                   </div>
                 ))}
               </div>
-            ))}
+            </div>
+
+            {/* Scrollable Timeline */}
+            <ScrollArea className="flex-1">
+              <div style={{ width: totalWidth }} className="relative">
+                {/* Month Headers */}
+                <div className="flex border-b border-border bg-muted">
+                  {months.map((month, index) => (
+                    <div key={index} className="w-[200px] p-4 border-r border-border/30 text-center">
+                      <div className="font-medium text-text-primary">
+                        {format(month, 'MMMM')}
+                      </div>
+                      <div className="text-xs text-text-secondary">
+                        {format(month, 'yyyy')}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Timeline Grid */}
+                <div className="relative bg-surface" style={{ height: `${displayTasks.length * 88}px` }}>
+                  {/* Vertical Month Lines */}
+                  {months.map((month, index) => (
+                    <div 
+                      key={index}
+                      className="absolute top-0 bottom-0 w-px bg-border/30"
+                      style={{ left: index * 200 }}
+                    />
+                  ))}
+                  
+                  {/* Today Line */}
+                  {(() => {
+                    const todayMonth = startOfMonth(new Date());
+                    const monthIndex = months.findIndex(month => 
+                      month.getTime() === todayMonth.getTime()
+                    );
+                    if (monthIndex !== -1) {
+                      const today = new Date();
+                      const dayOfMonth = today.getDate();
+                      const daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
+                      const todayPosition = monthIndex * 200 + (dayOfMonth / daysInMonth) * 200;
+                      
+                      return (
+                        <div 
+                          className="absolute top-0 bottom-0 w-0.5 bg-primary opacity-60 z-10"
+                          style={{ left: todayPosition }}
+                        >
+                          <div className="absolute -top-6 -left-6 text-xs text-primary font-medium bg-background px-1 rounded">
+                            Today
+                          </div>
+                        </div>
+                      );
+                    }
+                    return null;
+                  })()}
+
+                  {/* Task Bars */}
+                  {displayTasks.map((task, index) => {
+                    const position = getTaskPosition(task, months);
+                    if (!position) return null;
+
+                    return (
+                      <div
+                        key={task.id}
+                        className="absolute flex items-center"
+                        style={{
+                          top: index * 88 + 20,
+                          left: position.left,
+                          width: position.width,
+                          height: 48
+                        }}
+                      >
+                        <div 
+                          className={`
+                            h-8 rounded-lg bg-gradient-to-r ${getTaskColor(task)} 
+                            shadow-sm hover:shadow-md transition-all duration-200 
+                            cursor-pointer hover:scale-105 border border-white/20
+                            flex items-center px-3 relative overflow-hidden
+                          `}
+                          onClick={() => setViewingTask(task)}
+                        >
+                          {/* Shimmer effect */}
+                          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -skew-x-12" />
+                          
+                          <div className="relative z-10 flex items-center gap-2 w-full">
+                            <div className="flex-1 text-white text-sm font-medium truncate">
+                              {task.title}
+                            </div>
+                            <div className="text-white/80 text-xs">
+                              {task.timeEstimate}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+              <ScrollBar orientation="horizontal" />
+            </ScrollArea>
           </div>
         </div>
       </div>
