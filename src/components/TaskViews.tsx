@@ -261,43 +261,147 @@ export const TaskViews = ({ tasks = [], onTasksChange }: TaskViewsProps) => {
     </Select>
   );
 
-  const renderTimelineView = () => (
-    <div className="space-y-4">
-      <div className="border-l-2 border-primary pl-4 space-y-4">
-        {displayTasks.map((task, index) => (
-          <div 
-            key={task.id} 
-            className={`relative transition-all duration-300 ${
-              removingTasks.has(task.id) ? 'opacity-0 scale-95 translate-y-2' : 'opacity-100 scale-100 translate-y-0'
-            }`}
-          >
-            <div className={`absolute -left-6 w-3 h-3 rounded-full ${
-              task.status === "In Progress" ? "bg-primary" : "bg-muted"
-            }`}></div>
-            <div 
-              className="bg-surface-elevated p-4 rounded-lg border cursor-pointer hover:bg-surface-elevated/80 transition-colors"
-              onClick={() => setViewingTask(task)}
-            >
-              <div className="flex justify-between items-start mb-2">
-                <h4 className="font-medium text-text-primary">{task.title}</h4>
-                <div onClick={(e) => e.stopPropagation()}>
-                  <TaskActions task={task} />
-                </div>
+  const renderTimelineView = () => {
+    // Generate months for the timeline header
+    const currentDate = new Date();
+    const months = [];
+    for (let i = -1; i <= 3; i++) {
+      const monthDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + i, 1);
+      months.push({
+        name: monthDate.toLocaleDateString('en-US', { month: 'long' }),
+        year: monthDate.getFullYear(),
+        isCurrentMonth: i === 0
+      });
+    }
+
+    // Generate weeks within the timeline
+    const weeks = [];
+    for (let i = -4; i <= 12; i++) {
+      const weekDate = new Date();
+      weekDate.setDate(weekDate.getDate() + (i * 7));
+      weeks.push(weekDate.getDate());
+    }
+
+    const getTaskColor = (task: Task) => {
+      if (task.status === "Done") return "bg-green-500";
+      if (task.status === "In Progress") return "bg-blue-500";
+      if (task.priority === "High") return "bg-red-500";
+      if (task.priority === "Medium") return "bg-yellow-500";
+      return "bg-purple-500";
+    };
+
+    const getTaskDuration = (task: Task) => {
+      // Convert time estimate to days for visual representation
+      const estimate = task.timeEstimate.toLowerCase();
+      if (estimate.includes('week')) {
+        const weeks = parseInt(estimate) || 1;
+        return weeks * 7;
+      } else if (estimate.includes('day')) {
+        return parseInt(estimate) || 1;
+      }
+      return 3; // Default 3 days
+    };
+
+    const getTaskOffset = (index: number) => {
+      // Stagger tasks across timeline for visual variety
+      return (index * 10) % 60;
+    };
+
+    return (
+      <div className="space-y-4">
+        {/* Timeline Header */}
+        <div className="bg-surface-elevated border border-border rounded-lg overflow-hidden">
+          {/* Month Headers */}
+          <div className="grid grid-cols-5 border-b border-border">
+            <div className="p-3 bg-muted"></div>
+            {months.map((month, index) => (
+              <div key={index} className="p-3 text-center border-l border-border bg-muted">
+                <div className="font-medium text-text-primary">{month.name}</div>
+                <div className="text-xs text-text-secondary">{month.year}</div>
               </div>
-              <div className="flex justify-between items-center">
-                <p className="text-sm text-text-secondary">
-                  Due: {task.dueDate} | {task.assignee} | {task.timeEstimate}
-                </p>
-                <div onClick={(e) => e.stopPropagation()}>
-                  <StatusSelector task={task} />
-                </div>
-              </div>
-            </div>
+            ))}
           </div>
-        ))}
+
+          {/* Week Grid */}
+          <div className="grid grid-cols-5 border-b border-border">
+            <div className="p-2 bg-surface text-xs text-text-secondary">
+              {displayTasks.length} records
+            </div>
+            {months.map((month, monthIndex) => (
+              <div key={monthIndex} className="border-l border-border bg-surface">
+                <div className="grid grid-cols-4 h-8">
+                  {[1, 2, 3, 4].map((week) => (
+                    <div key={week} className="border-r border-border/30 text-center text-xs text-text-secondary flex items-center justify-center">
+                      {week * 7}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Tasks */}
+          <div className="max-h-96 overflow-y-auto">
+            {displayTasks.map((task, index) => (
+              <div 
+                key={task.id}
+                className={`grid grid-cols-5 border-b border-border/30 hover:bg-surface-elevated/50 transition-all duration-300 ${
+                  removingTasks.has(task.id) ? 'opacity-0 scale-95 translate-y-2' : 'opacity-100 scale-100 translate-y-0'
+                }`}
+              >
+                {/* Task Name Column */}
+                <div className="p-3 flex items-center justify-between">
+                  <div 
+                    className="cursor-pointer flex-1"
+                    onClick={() => setViewingTask(task)}
+                  >
+                    <div className="font-medium text-text-primary text-sm">{task.title}</div>
+                    <div className="text-xs text-text-secondary">{task.assignee}</div>
+                  </div>
+                  <div onClick={(e) => e.stopPropagation()}>
+                    <TaskActions task={task} />
+                  </div>
+                </div>
+
+                {/* Timeline Columns */}
+                {months.map((month, monthIndex) => (
+                  <div key={monthIndex} className="relative border-l border-border p-2">
+                    {/* Task Bar - only show in appropriate month */}
+                    {monthIndex === 1 + (index % 2) && (
+                      <div className="relative h-6 flex items-center">
+                        <div 
+                          className={`h-4 rounded ${getTaskColor(task)} relative transition-all duration-200 hover:scale-105 cursor-pointer`}
+                          style={{
+                            width: `${Math.min(getTaskDuration(task) * 8, 90)}%`,
+                            marginLeft: `${getTaskOffset(index)}%`
+                          }}
+                          onClick={() => setViewingTask(task)}
+                        >
+                          <div className="absolute inset-0 bg-white/20 rounded"></div>
+                          <div className="relative px-2 text-white text-xs font-medium truncate">
+                            {task.title}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* Today marker */}
+                    {month.isCurrentMonth && monthIndex === 1 && (
+                      <div className="absolute top-0 left-1/2 w-px h-full bg-primary opacity-50">
+                        <div className="absolute -top-2 -left-6 text-xs text-primary font-medium">
+                          Today
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   const renderKanbanView = () => {
     const todoTasks = displayTasks.filter(task => task.status === "To Do");
