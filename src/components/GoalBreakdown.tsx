@@ -239,80 +239,85 @@ export const GoalBreakdown = ({ onPlanImplemented }: GoalBreakdownProps) => {
           <h3 className="font-medium text-text-primary mb-6">Plan Preview</h3>
           
           <div className="space-y-4">
-            {generatedTasks.map((task) => (
-              <div key={task.id} className="p-4 bg-surface-elevated rounded-lg border border-border">
-                <div className="flex justify-between items-start mb-2">
-                  <h4 className="font-medium text-text-primary">{task.title}</h4>
-                  <div className="flex items-center gap-2">
-                    <Badge className={getPriorityColor(task.priority)}>
-                      {task.priority}
-                    </Badge>
-                    <div className="flex gap-1">
-                      <Dialog>
-                        <DialogTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => setEditingTask(task)}
-                            className="h-8 w-8 p-0"
-                          >
-                            <Pencil className="h-3 w-3" />
-                          </Button>
-                        </DialogTrigger>
-                        <DialogContent>
-                          <DialogHeader>
-                            <DialogTitle>Edit Task</DialogTitle>
-                          </DialogHeader>
-                          <EditTaskForm task={editingTask || task} onSave={handleEditTask} />
-                        </DialogContent>
-                      </Dialog>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleDeleteTask(task.id)}
-                        className="h-8 w-8 p-0 text-destructive hover:text-destructive"
-                      >
-                        <Trash2 className="h-3 w-3" />
-                      </Button>
+            {generatedTasks.length === 0 ? (
+              <div className="text-center py-8 text-text-secondary">
+                No tasks generated yet. Create a plan to see tasks here.
+              </div>
+            ) : (
+              generatedTasks.map((task) => (
+                <div key={task.id} className="p-4 bg-surface-elevated rounded-lg border border-border">
+                  <div className="flex justify-between items-start mb-2">
+                    <h4 className="font-medium text-text-primary">{task.title}</h4>
+                    <div className="flex items-center gap-2">
+                      <Badge className={getPriorityColor(task.priority)}>
+                        {task.priority}
+                      </Badge>
+                      <div className="flex gap-1">
+                        <Dialog>
+                          <DialogTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setEditingTask(task)}
+                              className="h-8 w-8 p-0"
+                            >
+                              <Pencil className="h-3 w-3" />
+                            </Button>
+                          </DialogTrigger>
+                          <DialogContent>
+                            <DialogHeader>
+                              <DialogTitle>Edit Task</DialogTitle>
+                            </DialogHeader>
+                            <EditTaskForm task={editingTask || task} onSave={handleEditTask} />
+                          </DialogContent>
+                        </Dialog>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDeleteTask(task.id)}
+                          className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <p className="text-sm text-text-secondary mb-3">{task.description}</p>
+                  
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
+                    <div>
+                      <span className="text-text-secondary">Assignee:</span>
+                      <p className="font-medium text-text-primary">{task.assignee}</p>
+                    </div>
+                    <div>
+                      <span className="text-text-secondary">Due Date:</span>
+                      <p className="font-medium text-text-primary">{task.dueDate}</p>
+                    </div>
+                    <div>
+                      <span className="text-text-secondary">Time Required:</span>
+                      <p className="font-medium text-text-primary">{task.timeEstimate}</p>
                     </div>
                   </div>
                 </div>
-                
-                <p className="text-sm text-text-secondary mb-3">{task.description}</p>
-                
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
-                  <div>
-                    <span className="text-text-secondary">Assignee:</span>
-                    <p className="font-medium text-text-primary">{task.assignee}</p>
-                  </div>
-                  <div>
-                    <span className="text-text-secondary">Due Date:</span>
-                    <p className="font-medium text-text-primary">{task.dueDate}</p>
-                  </div>
-                  <div>
-                    <span className="text-text-secondary">Time Required:</span>
-                    <p className="font-medium text-text-primary">{task.timeEstimate}</p>
-                  </div>
-                </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
           
-          <div className="mt-6 p-4 bg-muted rounded-lg">
-            <p className="text-sm text-text-secondary">
+          <div className="mt-6 p-4 bg-muted rounded-lg flex justify-between items-center">
+            <div className="text-sm text-text-secondary">
               <strong>Total Tasks:</strong> {generatedTasks.length} | 
               <strong> Estimated Duration:</strong> {Math.ceil(generatedTasks.length * 1.2)} weeks | 
               <strong> Team Members:</strong> {new Set(generatedTasks.map(t => t.assignee)).size}
-            </p>
-          </div>
-
-          <div className="mt-6 flex justify-end">
-            <Button 
-              onClick={handleImplementPlan}
-              className="bg-primary text-primary-foreground hover:bg-primary/90"
-            >
-              Implement Plan
-            </Button>
+            </div>
+            {generatedTasks.length > 0 && (
+              <Button 
+                onClick={handleImplementPlan}
+                className="bg-primary text-primary-foreground hover:bg-primary/90 ml-4"
+              >
+                Implement Plan
+              </Button>
+            )}
           </div>
         </Card>
       )}

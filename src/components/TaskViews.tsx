@@ -51,7 +51,7 @@ export const TaskViews = ({ tasks = [], onTasksChange }: TaskViewsProps) => {
     }
   ];
 
-  const displayTasks = tasks.length > 0 ? tasks : defaultTasks;
+  const displayTasks = tasks;
 
   const handleDeleteTask = (taskId: string) => {
     const updatedTasks = displayTasks.filter(task => task.id !== taskId);
@@ -271,7 +271,13 @@ export const TaskViews = ({ tasks = [], onTasksChange }: TaskViewsProps) => {
           </div>
           
           <div className="min-h-[300px]">
-            {renderActiveView()}
+            {displayTasks.length === 0 ? (
+              <div className="flex items-center justify-center h-[300px] text-text-secondary">
+                No tasks currently. Generate and implement a plan to see tasks here.
+              </div>
+            ) : (
+              renderActiveView()
+            )}
           </div>
         </div>
       </Card>
