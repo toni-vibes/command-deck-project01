@@ -37,9 +37,6 @@ const TaskHistory = () => {
     
     const updatedCurrentTasks = [...currentTasks, restoredTask];
     localStorage.setItem('currentTasks', JSON.stringify(updatedCurrentTasks));
-    
-    // Navigate back to main page
-    navigate('/');
   };
 
   const getPriorityColor = (priority: string) => {

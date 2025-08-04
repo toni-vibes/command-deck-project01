@@ -455,9 +455,9 @@ export const TaskViews = ({ tasks = [], onTasksChange }: TaskViewsProps) => {
                         <div className="font-medium text-text-primary text-sm mb-1">{task.title}</div>
                         <div className="text-xs text-text-secondary">{task.assignee}</div>
                         <div className="flex items-center gap-2 mt-2">
-                          <Badge variant="outline" className="text-xs">
-                            {task.status}
-                          </Badge>
+                          <div onClick={(e) => e.stopPropagation()}>
+                            <StatusSelector task={task} />
+                          </div>
                           <Badge variant="outline" className={`text-xs ${
                             task.priority === "High" ? "border-red-200 text-red-700" :
                             task.priority === "Medium" ? "border-amber-200 text-amber-700" :
