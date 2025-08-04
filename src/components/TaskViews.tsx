@@ -174,48 +174,59 @@ export const TaskViews = ({ tasks = [], onTasksChange }: TaskViewsProps) => {
 
     // Find tasks
     const activeTask = displayTasks.find(task => task.id === activeId);
+
+    if (!activeTask) return;
+
+    // Check if we're dropping over a column header or task
+    let targetStatus: Task["status"] | null = null;
+    
+    // If dropping over a task, get its status
     const overTask = displayTasks.find(task => task.id === overId);
+    if (overTask) {
+      targetStatus = overTask.status;
+    } else {
+      // If dropping over column area, determine status from drop zone
+      const dropZone = over.data?.current?.sortable?.containerId;
+      if (dropZone === "To Do" || dropZone === "In Progress" || dropZone === "Done") {
+        targetStatus = dropZone as Task["status"];
+      }
+    }
 
-    if (!activeTask || !overTask) return;
+    if (!targetStatus) return;
 
-    // If dropping in the same status, reorder
-    if (activeTask.status === overTask.status) {
+    // If status changed, update the task status
+    if (activeTask.status !== targetStatus) {
+      handleStatusChange(activeId, targetStatus);
+    } else {
+      // If dropping in the same status, reorder
       const tasksInStatus = displayTasks.filter(task => task.status === activeTask.status);
       const oldIndex = tasksInStatus.findIndex(task => task.id === activeId);
       const newIndex = tasksInStatus.findIndex(task => task.id === overId);
 
-      const reorderedTasks = arrayMove(tasksInStatus, oldIndex, newIndex);
-      
-      // Rebuild the full task list with reordered tasks
-      const otherTasks = displayTasks.filter(task => task.status !== activeTask.status);
-      const updatedTasks = [...otherTasks, ...reorderedTasks];
+      if (oldIndex !== newIndex) {
+        const reorderedTasks = arrayMove(tasksInStatus, oldIndex, newIndex);
+        
+        // Rebuild the full task list with reordered tasks
+        const otherTasks = displayTasks.filter(task => task.status !== activeTask.status);
+        const updatedTasks = [...otherTasks, ...reorderedTasks];
 
-      if (onTasksChange) {
-        onTasksChange(updatedTasks);
+        if (onTasksChange) {
+          onTasksChange(updatedTasks);
+        }
       }
     }
   };
 
   const TaskActions = ({ task }: { task: Task }) => (
     <div className="flex gap-1">
-      <Dialog>
-        <DialogTrigger asChild>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setEditingTask(task)}
-            className="h-7 w-7 p-0"
-          >
-            <Pencil className="h-3 w-3" />
-          </Button>
-        </DialogTrigger>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Edit Task</DialogTitle>
-          </DialogHeader>
-          <EditTaskForm task={editingTask || task} onSave={handleEditTask} />
-        </DialogContent>
-      </Dialog>
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={() => setEditingTask(task)}
+        className="h-7 w-7 p-0"
+      >
+        <Pencil className="h-3 w-3" />
+      </Button>
       <Button
         variant="ghost"
         size="sm"
@@ -293,7 +304,10 @@ export const TaskViews = ({ tasks = [], onTasksChange }: TaskViewsProps) => {
           <div className="space-y-3">
             <h4 className="font-medium text-text-primary">To Do</h4>
             <SortableContext items={todoTasks.map(task => task.id)} strategy={verticalListSortingStrategy}>
-              <div className="space-y-2">
+              <div 
+                className="space-y-2 min-h-[200px] p-3 border-2 border-dashed border-border/30 rounded-lg transition-colors"
+                data-status="To Do"
+              >
                 {todoTasks.map(task => (
                   <SortableTaskCard
                     key={task.id}
@@ -310,7 +324,10 @@ export const TaskViews = ({ tasks = [], onTasksChange }: TaskViewsProps) => {
           <div className="space-y-3">
             <h4 className="font-medium text-text-primary">In Progress</h4>
             <SortableContext items={inProgressTasks.map(task => task.id)} strategy={verticalListSortingStrategy}>
-              <div className="space-y-2">
+              <div 
+                className="space-y-2 min-h-[200px] p-3 border-2 border-dashed border-border/30 rounded-lg transition-colors"
+                data-status="In Progress"
+              >
                 {inProgressTasks.map(task => (
                   <SortableTaskCard
                     key={task.id}
@@ -327,7 +344,10 @@ export const TaskViews = ({ tasks = [], onTasksChange }: TaskViewsProps) => {
           <div className="space-y-3">
             <h4 className="font-medium text-text-primary">Done</h4>
             <SortableContext items={doneTasks.map(task => task.id)} strategy={verticalListSortingStrategy}>
-              <div className="space-y-2">
+              <div 
+                className="space-y-2 min-h-[200px] p-3 border-2 border-dashed border-border/30 rounded-lg transition-colors"
+                data-status="Done"
+              >
                 {doneTasks.map(task => (
                   <SortableTaskCard
                     key={task.id}
@@ -416,15 +436,6 @@ export const TaskViews = ({ tasks = [], onTasksChange }: TaskViewsProps) => {
           <div className="flex items-center justify-between border-b border-divider pb-4">
             <h3 className="font-medium text-text-primary">Plan Views</h3>
             <div className="flex items-center gap-3">
-              <Button
-                variant="outline"
-                onClick={() => navigate('/task-history')}
-                className="flex items-center gap-2"
-                size="sm"
-              >
-                <History className="h-4 w-4" />
-                Task History
-              </Button>
               <Dialog open={showAddTask} onOpenChange={setShowAddTask}>
                 <DialogTrigger asChild>
                   <Button 
@@ -443,6 +454,15 @@ export const TaskViews = ({ tasks = [], onTasksChange }: TaskViewsProps) => {
                   <AddTaskForm onSave={handleAddTask} onCancel={() => setShowAddTask(false)} />
                 </DialogContent>
               </Dialog>
+              <Button
+                variant="outline"
+                onClick={() => navigate('/task-history')}
+                className="flex items-center gap-2"
+                size="sm"
+              >
+                <History className="h-4 w-4" />
+                Task History
+              </Button>
               <div className="flex bg-muted rounded-lg p-1">
                 <Button
                   variant={activeView === "timeline" ? "default" : "ghost"}
@@ -483,6 +503,18 @@ export const TaskViews = ({ tasks = [], onTasksChange }: TaskViewsProps) => {
           </div>
         </div>
       </Card>
+
+      {/* Edit Task Dialog */}
+      <Dialog open={!!editingTask} onOpenChange={() => setEditingTask(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Task</DialogTitle>
+          </DialogHeader>
+          {editingTask && (
+            <EditTaskForm task={editingTask} onSave={handleEditTask} />
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* Task Details Dialog */}
       <Dialog open={!!viewingTask} onOpenChange={() => setViewingTask(null)}>
