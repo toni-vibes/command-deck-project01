@@ -8,21 +8,12 @@ import { Task } from "@/types/task";
 const Index = () => {
   const [implementedTasks, setImplementedTasks] = useState<Task[]>([]);
 
-  // Load tasks from localStorage on component mount
+  // Clear all existing data and start fresh
   useEffect(() => {
-    const savedTasks = localStorage.getItem('currentTasks');
-    if (savedTasks) {
-      try {
-        const parsedTasks = JSON.parse(savedTasks);
-        // Only set tasks if it's a non-empty array
-        if (Array.isArray(parsedTasks) && parsedTasks.length > 0) {
-          setImplementedTasks(parsedTasks);
-        }
-      } catch (error) {
-        // Clear invalid data
-        localStorage.removeItem('currentTasks');
-      }
-    }
+    // Clear any existing task data to ensure empty start
+    localStorage.removeItem('currentTasks');
+    localStorage.removeItem('taskHistory');
+    setImplementedTasks([]);
   }, []);
 
   // Save tasks to localStorage whenever tasks change
