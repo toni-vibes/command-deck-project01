@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -20,6 +20,7 @@ export const TaskViews = ({ tasks = [], onTasksChange }: TaskViewsProps) => {
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [showAddTask, setShowAddTask] = useState(false);
   const [viewingTask, setViewingTask] = useState<Task | null>(null);
+  const [removingTasks, setRemovingTasks] = useState<Set<string>>(new Set());
 
   // Default tasks if none provided
   const defaultTasks: Task[] = [
@@ -68,9 +69,29 @@ export const TaskViews = ({ tasks = [], onTasksChange }: TaskViewsProps) => {
     const updatedTasks = displayTasks.map(task => 
       task.id === updatedTask.id ? updatedTask : task
     );
-    if (onTasksChange) {
-      onTasksChange(updatedTasks);
+    
+    // Check if task was marked as "Done" and handle automatic removal
+    if (updatedTask.status === "Done") {
+      setRemovingTasks(prev => new Set(prev.add(updatedTask.id)));
+      
+      // Add fade out animation and then remove after delay
+      setTimeout(() => {
+        const tasksWithoutCompleted = updatedTasks.filter(task => task.id !== updatedTask.id);
+        if (onTasksChange) {
+          onTasksChange(tasksWithoutCompleted);
+        }
+        setRemovingTasks(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(updatedTask.id);
+          return newSet;
+        });
+      }, 300); // Match the fade animation duration
+    } else {
+      if (onTasksChange) {
+        onTasksChange(updatedTasks);
+      }
     }
+    
     setEditingTask(null);
   };
 
@@ -117,7 +138,12 @@ export const TaskViews = ({ tasks = [], onTasksChange }: TaskViewsProps) => {
     <div className="space-y-4">
       <div className="border-l-2 border-primary pl-4 space-y-4">
         {displayTasks.map((task, index) => (
-          <div key={task.id} className="relative">
+          <div 
+            key={task.id} 
+            className={`relative transition-all duration-300 ${
+              removingTasks.has(task.id) ? 'opacity-0 scale-95 translate-y-2' : 'opacity-100 scale-100 translate-y-0'
+            }`}
+          >
             <div className={`absolute -left-6 w-3 h-3 rounded-full ${
               task.status === "In Progress" ? "bg-primary" : "bg-muted"
             }`}></div>
@@ -154,7 +180,9 @@ export const TaskViews = ({ tasks = [], onTasksChange }: TaskViewsProps) => {
             {todoTasks.map(task => (
               <div 
                 key={task.id} 
-                className="bg-surface-elevated p-3 rounded-lg border cursor-pointer hover:bg-surface-elevated/80 transition-colors"
+                className={`bg-surface-elevated p-3 rounded-lg border cursor-pointer hover:bg-surface-elevated/80 transition-all duration-300 ${
+                  removingTasks.has(task.id) ? 'opacity-0 scale-95 translate-y-2' : 'opacity-100 scale-100 translate-y-0'
+                }`}
                 onClick={() => setViewingTask(task)}
               >
                 <div className="flex justify-between items-start mb-1">
@@ -174,7 +202,9 @@ export const TaskViews = ({ tasks = [], onTasksChange }: TaskViewsProps) => {
             {inProgressTasks.map(task => (
               <div 
                 key={task.id} 
-                className="bg-surface-elevated p-3 rounded-lg border cursor-pointer hover:bg-surface-elevated/80 transition-colors"
+                className={`bg-surface-elevated p-3 rounded-lg border cursor-pointer hover:bg-surface-elevated/80 transition-all duration-300 ${
+                  removingTasks.has(task.id) ? 'opacity-0 scale-95 translate-y-2' : 'opacity-100 scale-100 translate-y-0'
+                }`}
                 onClick={() => setViewingTask(task)}
               >
                 <div className="flex justify-between items-start mb-1">
@@ -194,7 +224,9 @@ export const TaskViews = ({ tasks = [], onTasksChange }: TaskViewsProps) => {
             {doneTasks.map(task => (
               <div 
                 key={task.id} 
-                className="bg-surface-elevated p-3 rounded-lg border cursor-pointer hover:bg-surface-elevated/80 transition-colors"
+                className={`bg-surface-elevated p-3 rounded-lg border cursor-pointer hover:bg-surface-elevated/80 transition-all duration-300 ${
+                  removingTasks.has(task.id) ? 'opacity-0 scale-95 translate-y-2' : 'opacity-100 scale-100 translate-y-0'
+                }`}
                 onClick={() => setViewingTask(task)}
               >
                 <div className="flex justify-between items-start mb-1">
@@ -238,7 +270,9 @@ export const TaskViews = ({ tasks = [], onTasksChange }: TaskViewsProps) => {
           {displayTasks.map(task => (
             <tr 
               key={task.id} 
-              className="border-b border-divider cursor-pointer hover:bg-surface-elevated/50 transition-colors"
+              className={`border-b border-divider cursor-pointer hover:bg-surface-elevated/50 transition-all duration-300 ${
+                removingTasks.has(task.id) ? 'opacity-0 scale-95' : 'opacity-100 scale-100'
+              }`}
               onClick={() => setViewingTask(task)}
             >
               <td className="py-3 px-2 text-text-primary">{task.title}</td>

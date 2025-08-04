@@ -4,6 +4,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -15,14 +16,16 @@ import { Plus } from "lucide-react";
 
 interface GoalBreakdownProps {
   onPlanImplemented?: (tasks: Task[]) => void;
+  currentTasks?: Task[];
 }
 
-export const GoalBreakdown = ({ onPlanImplemented }: GoalBreakdownProps) => {
+export const GoalBreakdown = ({ onPlanImplemented, currentTasks = [] }: GoalBreakdownProps) => {
   const [goal, setGoal] = useState("");
   const [planGenerated, setPlanGenerated] = useState(false);
   const [generatedTasks, setGeneratedTasks] = useState<Task[]>([]);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [showAddTask, setShowAddTask] = useState(false);
+  const [showOverwriteWarning, setShowOverwriteWarning] = useState(false);
 
   const generateTasksFromGoal = (goalText: string): Task[] => {
     // Simple goal analysis to generate tasks
@@ -187,12 +190,23 @@ export const GoalBreakdown = ({ onPlanImplemented }: GoalBreakdownProps) => {
   };
 
   const handleImplementPlan = () => {
+    // Check if there are existing tasks and show warning
+    if (currentTasks.length > 0) {
+      setShowOverwriteWarning(true);
+      return;
+    }
+    
+    proceedWithImplementation();
+  };
+
+  const proceedWithImplementation = () => {
     if (onPlanImplemented && generatedTasks.length > 0) {
       onPlanImplemented(generatedTasks);
       // Reset the goal breakdown
       setGoal("");
       setPlanGenerated(false);
       setGeneratedTasks([]);
+      setShowOverwriteWarning(false);
     }
   };
 
@@ -349,6 +363,27 @@ export const GoalBreakdown = ({ onPlanImplemented }: GoalBreakdownProps) => {
           </div>
         </Card>
       )}
+
+      {/* Overwrite Warning Dialog */}
+      <AlertDialog open={showOverwriteWarning} onOpenChange={setShowOverwriteWarning}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Overwrite Current Plan?</AlertDialogTitle>
+            <AlertDialogDescription>
+              You currently have {currentTasks.length} task{currentTasks.length !== 1 ? 's' : ''} in your Current Plan. 
+              Implementing this new plan will replace all existing tasks. This action cannot be undone.
+              
+              Are you sure you want to proceed?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={proceedWithImplementation}>
+              Yes, Overwrite Plan
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </section>
   );
 };
