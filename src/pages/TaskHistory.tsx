@@ -96,7 +96,7 @@ const TaskHistory = () => {
                     <p className="text-text-secondary mb-4">{task.description}</p>
                   )}
                   
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm">
                     <div className="flex items-center gap-2 text-text-secondary">
                       <User className="h-4 w-4" />
                       <span>Assignee: {task.assignee}</span>
@@ -109,6 +109,12 @@ const TaskHistory = () => {
                       <Clock className="h-4 w-4" />
                       <span>Estimate: {task.timeEstimate}</span>
                     </div>
+                    {task.completedAt && (
+                      <div className="flex items-center gap-2 text-text-secondary">
+                        <Calendar className="h-4 w-4" />
+                        <span>Completed: {new Date(task.completedAt).toLocaleDateString()}</span>
+                      </div>
+                    )}
                   </div>
                 </Card>
               ))}

@@ -8,30 +8,49 @@ import { Task } from "@/types/task";
 const Index = () => {
   const [implementedTasks, setImplementedTasks] = useState<Task[]>([]);
 
+  // Load tasks from localStorage on component mount
+  useEffect(() => {
+    const savedTasks = localStorage.getItem('currentTasks');
+    if (savedTasks) {
+      setImplementedTasks(JSON.parse(savedTasks));
+    }
+  }, []);
+
+  // Save tasks to localStorage whenever tasks change
+  useEffect(() => {
+    if (implementedTasks.length > 0) {
+      localStorage.setItem('currentTasks', JSON.stringify(implementedTasks));
+    }
+  }, [implementedTasks]);
+
   // Task History management functions
   const saveTaskToHistory = (task: Task) => {
     const savedHistory = localStorage.getItem('taskHistory');
     const history = savedHistory ? JSON.parse(savedHistory) : [];
-    const updatedHistory = [...history, { ...task, status: "Done" }];
-    localStorage.setItem('taskHistory', JSON.stringify(updatedHistory));
+    
+    // Check if task already exists in history (avoid duplicates)
+    const taskExists = history.some((historyTask: Task) => historyTask.id === task.id);
+    if (!taskExists) {
+      const completedTask = { 
+        ...task, 
+        status: "Done" as const,
+        completedAt: new Date().toISOString()
+      };
+      const updatedHistory = [...history, completedTask];
+      localStorage.setItem('taskHistory', JSON.stringify(updatedHistory));
+    }
   };
 
-  const handleTaskStatusChange = (updatedTasks: Task[]) => {
-    // Check for newly completed tasks and move them to history
-    const currentTaskIds = new Set(implementedTasks.map(t => t.id));
-    const newTaskIds = new Set(updatedTasks.map(t => t.id));
-    
-    // Find tasks that were removed (completed)
-    const removedTasks = implementedTasks.filter(task => !newTaskIds.has(task.id));
-    
-    // Save completed tasks to history
-    removedTasks.forEach(task => {
-      if (task.status === "Done") {
-        saveTaskToHistory(task);
-      }
+  const handleTasksChange = (updatedTasks: Task[]) => {
+    // Find tasks that were marked as "Done" and save them to history
+    const doneTasks = updatedTasks.filter(task => task.status === "Done");
+    doneTasks.forEach(task => {
+      saveTaskToHistory(task);
     });
-    
-    setImplementedTasks(updatedTasks);
+
+    // Remove "Done" tasks from current tasks (they're now in history)
+    const activeTasks = updatedTasks.filter(task => task.status !== "Done");
+    setImplementedTasks(activeTasks);
   };
 
   const handlePlanImplemented = (tasks: Task[]) => {
@@ -56,7 +75,7 @@ const Index = () => {
           <GoalBreakdown onPlanImplemented={handlePlanImplemented} currentTasks={implementedTasks} />
 
           {/* Section 2: Task Views */}
-          <TaskViews tasks={implementedTasks} onTasksChange={handleTaskStatusChange} />
+          <TaskViews tasks={implementedTasks} onTasksChange={handleTasksChange} />
 
           {/* Section 3: Team Workload */}
           <TeamWorkload />

@@ -106,26 +106,9 @@ export const TaskViews = ({ tasks = [], onTasksChange }: TaskViewsProps) => {
       task.id === updatedTask.id ? updatedTask : task
     );
     
-    // Check if task was marked as "Done" and handle automatic removal
-    if (updatedTask.status === "Done") {
-      setRemovingTasks(prev => new Set(prev.add(updatedTask.id)));
-      
-      // Add fade out animation and then remove after delay
-      setTimeout(() => {
-        const tasksWithoutCompleted = updatedTasks.filter(task => task.id !== updatedTask.id);
-        if (onTasksChange) {
-          onTasksChange(tasksWithoutCompleted);
-        }
-        setRemovingTasks(prev => {
-          const newSet = new Set(prev);
-          newSet.delete(updatedTask.id);
-          return newSet;
-        });
-      }, 300); // Match the fade animation duration
-    } else {
-      if (onTasksChange) {
-        onTasksChange(updatedTasks);
-      }
+    // Handle task updates - let parent handle "Done" status and history
+    if (onTasksChange) {
+      onTasksChange(updatedTasks);
     }
     
     setEditingTask(null);
@@ -144,29 +127,9 @@ export const TaskViews = ({ tasks = [], onTasksChange }: TaskViewsProps) => {
       task.id === taskId ? { ...task, status: newStatus } : task
     );
 
-    // Check if task was marked as "Done" and handle automatic removal
-    if (newStatus === "Done") {
-      const completedTask = updatedTasks.find(task => task.id === taskId);
-      if (completedTask) {
-        setRemovingTasks(prev => new Set(prev.add(taskId)));
-        
-        // Add fade out animation and then remove after delay
-        setTimeout(() => {
-          const tasksWithoutCompleted = updatedTasks.filter(task => task.id !== taskId);
-          if (onTasksChange) {
-            onTasksChange(tasksWithoutCompleted);
-          }
-          setRemovingTasks(prev => {
-            const newSet = new Set(prev);
-            newSet.delete(taskId);
-            return newSet;
-          });
-        }, 300);
-      }
-    } else {
-      if (onTasksChange) {
-        onTasksChange(updatedTasks);
-      }
+    // Handle task updates - let parent handle "Done" status and history
+    if (onTasksChange) {
+      onTasksChange(updatedTasks);
     }
   };
 

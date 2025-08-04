@@ -7,4 +7,5 @@ export interface Task {
   timeEstimate: string;
   status: "To Do" | "In Progress" | "Done";
   priority: "Low" | "Medium" | "High";
+  completedAt?: string;
 }
