@@ -3,10 +3,32 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Task } from "@/types/task";
-import { Pencil, Trash2, Plus } from "lucide-react";
+import { Pencil, Trash2, Plus, History } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { EditTaskForm } from "./EditTaskForm";
 import { AddTaskForm } from "./AddTaskForm";
+import { SortableTaskCard } from "./SortableTaskCard";
+import { useNavigate } from "react-router-dom";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import {
+  useSortable,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 
 type ViewType = "timeline" | "kanban" | "table";
 
@@ -16,11 +38,19 @@ interface TaskViewsProps {
 }
 
 export const TaskViews = ({ tasks = [], onTasksChange }: TaskViewsProps) => {
+  const navigate = useNavigate();
   const [activeView, setActiveView] = useState<ViewType>("timeline");
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [showAddTask, setShowAddTask] = useState(false);
   const [viewingTask, setViewingTask] = useState<Task | null>(null);
   const [removingTasks, setRemovingTasks] = useState<Set<string>>(new Set());
+
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
 
   // Default tasks if none provided
   const defaultTasks: Task[] = [
@@ -103,6 +133,69 @@ export const TaskViews = ({ tasks = [], onTasksChange }: TaskViewsProps) => {
     setShowAddTask(false);
   };
 
+  const handleStatusChange = (taskId: string, newStatus: Task["status"]) => {
+    const updatedTasks = displayTasks.map(task => 
+      task.id === taskId ? { ...task, status: newStatus } : task
+    );
+
+    // Check if task was marked as "Done" and handle automatic removal
+    if (newStatus === "Done") {
+      const completedTask = updatedTasks.find(task => task.id === taskId);
+      if (completedTask) {
+        setRemovingTasks(prev => new Set(prev.add(taskId)));
+        
+        // Add fade out animation and then remove after delay
+        setTimeout(() => {
+          const tasksWithoutCompleted = updatedTasks.filter(task => task.id !== taskId);
+          if (onTasksChange) {
+            onTasksChange(tasksWithoutCompleted);
+          }
+          setRemovingTasks(prev => {
+            const newSet = new Set(prev);
+            newSet.delete(taskId);
+            return newSet;
+          });
+        }, 300);
+      }
+    } else {
+      if (onTasksChange) {
+        onTasksChange(updatedTasks);
+      }
+    }
+  };
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (!over) return;
+
+    const activeId = active.id as string;
+    const overId = over.id as string;
+
+    // Find tasks
+    const activeTask = displayTasks.find(task => task.id === activeId);
+    const overTask = displayTasks.find(task => task.id === overId);
+
+    if (!activeTask || !overTask) return;
+
+    // If dropping in the same status, reorder
+    if (activeTask.status === overTask.status) {
+      const tasksInStatus = displayTasks.filter(task => task.status === activeTask.status);
+      const oldIndex = tasksInStatus.findIndex(task => task.id === activeId);
+      const newIndex = tasksInStatus.findIndex(task => task.id === overId);
+
+      const reorderedTasks = arrayMove(tasksInStatus, oldIndex, newIndex);
+      
+      // Rebuild the full task list with reordered tasks
+      const otherTasks = displayTasks.filter(task => task.status !== activeTask.status);
+      const updatedTasks = [...otherTasks, ...reorderedTasks];
+
+      if (onTasksChange) {
+        onTasksChange(updatedTasks);
+      }
+    }
+  };
+
   const TaskActions = ({ task }: { task: Task }) => (
     <div className="flex gap-1">
       <Dialog>
@@ -134,6 +227,19 @@ export const TaskViews = ({ tasks = [], onTasksChange }: TaskViewsProps) => {
     </div>
   );
 
+  const StatusSelector = ({ task }: { task: Task }) => (
+    <Select value={task.status} onValueChange={(value: Task["status"]) => handleStatusChange(task.id, value)}>
+      <SelectTrigger className="w-32 h-7 text-xs">
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value="To Do">To Do</SelectItem>
+        <SelectItem value="In Progress">In Progress</SelectItem>
+        <SelectItem value="Done">Done</SelectItem>
+      </SelectContent>
+    </Select>
+  );
+
   const renderTimelineView = () => (
     <div className="space-y-4">
       <div className="border-l-2 border-primary pl-4 space-y-4">
@@ -157,9 +263,14 @@ export const TaskViews = ({ tasks = [], onTasksChange }: TaskViewsProps) => {
                   <TaskActions task={task} />
                 </div>
               </div>
-              <p className="text-sm text-text-secondary">
-                Due: {task.dueDate} | {task.assignee} | {task.timeEstimate}
-              </p>
+              <div className="flex justify-between items-center">
+                <p className="text-sm text-text-secondary">
+                  Due: {task.dueDate} | {task.assignee} | {task.timeEstimate}
+                </p>
+                <div onClick={(e) => e.stopPropagation()}>
+                  <StatusSelector task={task} />
+                </div>
+              </div>
             </div>
           </div>
         ))}
@@ -173,74 +284,65 @@ export const TaskViews = ({ tasks = [], onTasksChange }: TaskViewsProps) => {
     const doneTasks = displayTasks.filter(task => task.status === "Done");
 
     return (
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="space-y-3">
-          <h4 className="font-medium text-text-primary">To Do</h4>
-          <div className="space-y-2">
-            {todoTasks.map(task => (
-              <div 
-                key={task.id} 
-                className={`bg-surface-elevated p-3 rounded-lg border cursor-pointer hover:bg-surface-elevated/80 transition-all duration-300 ${
-                  removingTasks.has(task.id) ? 'opacity-0 scale-95 translate-y-2' : 'opacity-100 scale-100 translate-y-0'
-                }`}
-                onClick={() => setViewingTask(task)}
-              >
-                <div className="flex justify-between items-start mb-1">
-                  <p className="text-sm font-medium">{task.title}</p>
-                  <div onClick={(e) => e.stopPropagation()}>
-                    <TaskActions task={task} />
-                  </div>
-                </div>
-                <p className="text-xs text-text-secondary">{task.priority} priority | {task.assignee}</p>
+      <DndContext 
+        sensors={sensors}
+        collisionDetection={closestCenter}
+        onDragEnd={handleDragEnd}
+      >
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="space-y-3">
+            <h4 className="font-medium text-text-primary">To Do</h4>
+            <SortableContext items={todoTasks.map(task => task.id)} strategy={verticalListSortingStrategy}>
+              <div className="space-y-2">
+                {todoTasks.map(task => (
+                  <SortableTaskCard
+                    key={task.id}
+                    task={task}
+                    onEdit={setEditingTask}
+                    onDelete={handleDeleteTask}
+                    onView={setViewingTask}
+                    removingTasks={removingTasks}
+                  />
+                ))}
               </div>
-            ))}
+            </SortableContext>
+          </div>
+          <div className="space-y-3">
+            <h4 className="font-medium text-text-primary">In Progress</h4>
+            <SortableContext items={inProgressTasks.map(task => task.id)} strategy={verticalListSortingStrategy}>
+              <div className="space-y-2">
+                {inProgressTasks.map(task => (
+                  <SortableTaskCard
+                    key={task.id}
+                    task={task}
+                    onEdit={setEditingTask}
+                    onDelete={handleDeleteTask}
+                    onView={setViewingTask}
+                    removingTasks={removingTasks}
+                  />
+                ))}
+              </div>
+            </SortableContext>
+          </div>
+          <div className="space-y-3">
+            <h4 className="font-medium text-text-primary">Done</h4>
+            <SortableContext items={doneTasks.map(task => task.id)} strategy={verticalListSortingStrategy}>
+              <div className="space-y-2">
+                {doneTasks.map(task => (
+                  <SortableTaskCard
+                    key={task.id}
+                    task={task}
+                    onEdit={setEditingTask}
+                    onDelete={handleDeleteTask}
+                    onView={setViewingTask}
+                    removingTasks={removingTasks}
+                  />
+                ))}
+              </div>
+            </SortableContext>
           </div>
         </div>
-        <div className="space-y-3">
-          <h4 className="font-medium text-text-primary">In Progress</h4>
-          <div className="space-y-2">
-            {inProgressTasks.map(task => (
-              <div 
-                key={task.id} 
-                className={`bg-surface-elevated p-3 rounded-lg border cursor-pointer hover:bg-surface-elevated/80 transition-all duration-300 ${
-                  removingTasks.has(task.id) ? 'opacity-0 scale-95 translate-y-2' : 'opacity-100 scale-100 translate-y-0'
-                }`}
-                onClick={() => setViewingTask(task)}
-              >
-                <div className="flex justify-between items-start mb-1">
-                  <p className="text-sm font-medium">{task.title}</p>
-                  <div onClick={(e) => e.stopPropagation()}>
-                    <TaskActions task={task} />
-                  </div>
-                </div>
-                <p className="text-xs text-text-secondary">{task.assignee} | Due: {task.dueDate}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-        <div className="space-y-3">
-          <h4 className="font-medium text-text-primary">Done</h4>
-          <div className="space-y-2">
-            {doneTasks.map(task => (
-              <div 
-                key={task.id} 
-                className={`bg-surface-elevated p-3 rounded-lg border cursor-pointer hover:bg-surface-elevated/80 transition-all duration-300 ${
-                  removingTasks.has(task.id) ? 'opacity-0 scale-95 translate-y-2' : 'opacity-100 scale-100 translate-y-0'
-                }`}
-                onClick={() => setViewingTask(task)}
-              >
-                <div className="flex justify-between items-start mb-1">
-                  <p className="text-sm font-medium">{task.title}</p>
-                  <div onClick={(e) => e.stopPropagation()}>
-                    <TaskActions task={task} />
-                  </div>
-                </div>
-                <p className="text-xs text-text-secondary">Completed | {task.assignee}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
+      </DndContext>
     );
   };
 
@@ -277,10 +379,8 @@ export const TaskViews = ({ tasks = [], onTasksChange }: TaskViewsProps) => {
             >
               <td className="py-3 px-2 text-text-primary">{task.title}</td>
               <td className="py-3 px-2 text-text-secondary">{task.assignee}</td>
-              <td className="py-3 px-2">
-                <span className={`px-2 py-1 rounded-full text-xs ${getStatusColor(task.status)}`}>
-                  {task.status}
-                </span>
+              <td className="py-3 px-2" onClick={(e) => e.stopPropagation()}>
+                <StatusSelector task={task} />
               </td>
               <td className="py-3 px-2 text-text-secondary">{task.dueDate}</td>
               <td className="py-3 px-2 text-text-secondary">{task.timeEstimate}</td>
@@ -316,6 +416,15 @@ export const TaskViews = ({ tasks = [], onTasksChange }: TaskViewsProps) => {
           <div className="flex items-center justify-between border-b border-divider pb-4">
             <h3 className="font-medium text-text-primary">Plan Views</h3>
             <div className="flex items-center gap-3">
+              <Button
+                variant="outline"
+                onClick={() => navigate('/task-history')}
+                className="flex items-center gap-2"
+                size="sm"
+              >
+                <History className="h-4 w-4" />
+                Task History
+              </Button>
               <Dialog open={showAddTask} onOpenChange={setShowAddTask}>
                 <DialogTrigger asChild>
                   <Button 

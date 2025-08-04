@@ -4,12 +4,8 @@ import { TaskViews } from "@/components/TaskViews";
 import { TeamWorkload } from "@/components/TeamWorkload";
 import { ActionButtons } from "@/components/ActionButtons";
 import { Task } from "@/types/task";
-import { Button } from "@/components/ui/button";
-import { History } from "lucide-react";
-import { useNavigate } from "react-router-dom";
 
 const Index = () => {
-  const navigate = useNavigate();
   const [implementedTasks, setImplementedTasks] = useState<Task[]>([]);
 
   // Task History management functions
@@ -48,17 +44,7 @@ const Index = () => {
         <div className="max-w-7xl mx-auto px-6 py-6">
           <div className="flex justify-between items-center">
             <h1 className="text-2xl font-semibold text-text-primary">Command Deck</h1>
-            <div className="flex items-center gap-3">
-              <Button
-                variant="outline"
-                onClick={() => navigate('/task-history')}
-                className="flex items-center gap-2"
-              >
-                <History className="h-4 w-4" />
-                Task History
-              </Button>
-              <ActionButtons />
-            </div>
+            <ActionButtons />
           </div>
         </div>
       </header>
