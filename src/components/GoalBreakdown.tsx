@@ -3,7 +3,13 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Task } from "@/types/task";
+import { Pencil, Trash2 } from "lucide-react";
+import { EditTaskForm } from "./EditTaskForm";
 
 interface GoalBreakdownProps {
   onPlanImplemented?: (tasks: Task[]) => void;
@@ -13,6 +19,7 @@ export const GoalBreakdown = ({ onPlanImplemented }: GoalBreakdownProps) => {
   const [goal, setGoal] = useState("");
   const [planGenerated, setPlanGenerated] = useState(false);
   const [generatedTasks, setGeneratedTasks] = useState<Task[]>([]);
+  const [editingTask, setEditingTask] = useState<Task | null>(null);
 
   const generateTasksFromGoal = (goalText: string): Task[] => {
     // Simple goal analysis to generate tasks
@@ -186,6 +193,17 @@ export const GoalBreakdown = ({ onPlanImplemented }: GoalBreakdownProps) => {
     }
   };
 
+  const handleDeleteTask = (taskId: string) => {
+    setGeneratedTasks(tasks => tasks.filter(task => task.id !== taskId));
+  };
+
+  const handleEditTask = (updatedTask: Task) => {
+    setGeneratedTasks(tasks => tasks.map(task => 
+      task.id === updatedTask.id ? updatedTask : task
+    ));
+    setEditingTask(null);
+  };
+
   const getPriorityColor = (priority: string) => {
     switch (priority) {
       case "High": return "bg-destructive/10 text-destructive border-destructive/20";
@@ -218,24 +236,46 @@ export const GoalBreakdown = ({ onPlanImplemented }: GoalBreakdownProps) => {
 
       {planGenerated && (
         <Card className="p-6 bg-surface border-border">
-          <div className="flex justify-between items-center mb-6">
-            <h3 className="font-medium text-text-primary">Plan Preview</h3>
-            <Button 
-              onClick={handleImplementPlan}
-              className="bg-primary text-primary-foreground hover:bg-primary/90"
-            >
-              Implement Plan
-            </Button>
-          </div>
+          <h3 className="font-medium text-text-primary mb-6">Plan Preview</h3>
           
           <div className="space-y-4">
-            {generatedTasks.map((task, index) => (
+            {generatedTasks.map((task) => (
               <div key={task.id} className="p-4 bg-surface-elevated rounded-lg border border-border">
                 <div className="flex justify-between items-start mb-2">
                   <h4 className="font-medium text-text-primary">{task.title}</h4>
-                  <Badge className={getPriorityColor(task.priority)}>
-                    {task.priority}
-                  </Badge>
+                  <div className="flex items-center gap-2">
+                    <Badge className={getPriorityColor(task.priority)}>
+                      {task.priority}
+                    </Badge>
+                    <div className="flex gap-1">
+                      <Dialog>
+                        <DialogTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setEditingTask(task)}
+                            className="h-8 w-8 p-0"
+                          >
+                            <Pencil className="h-3 w-3" />
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent>
+                          <DialogHeader>
+                            <DialogTitle>Edit Task</DialogTitle>
+                          </DialogHeader>
+                          <EditTaskForm task={editingTask || task} onSave={handleEditTask} />
+                        </DialogContent>
+                      </Dialog>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleDeleteTask(task.id)}
+                        className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  </div>
                 </div>
                 
                 <p className="text-sm text-text-secondary mb-3">{task.description}</p>
@@ -264,6 +304,15 @@ export const GoalBreakdown = ({ onPlanImplemented }: GoalBreakdownProps) => {
               <strong> Estimated Duration:</strong> {Math.ceil(generatedTasks.length * 1.2)} weeks | 
               <strong> Team Members:</strong> {new Set(generatedTasks.map(t => t.assignee)).size}
             </p>
+          </div>
+
+          <div className="mt-6 flex justify-end">
+            <Button 
+              onClick={handleImplementPlan}
+              className="bg-primary text-primary-foreground hover:bg-primary/90"
+            >
+              Implement Plan
+            </Button>
           </div>
         </Card>
       )}

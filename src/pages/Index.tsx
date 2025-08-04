@@ -30,7 +30,7 @@ const Index = () => {
           <GoalBreakdown onPlanImplemented={handlePlanImplemented} />
 
           {/* Section 2: Task Views */}
-          <TaskViews tasks={implementedTasks} />
+          <TaskViews tasks={implementedTasks} onTasksChange={setImplementedTasks} />
 
           {/* Section 3: Team Workload */}
           <TeamWorkload />

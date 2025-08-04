@@ -1,16 +1,21 @@
 import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Task } from "@/types/task";
+import { Pencil, Trash2 } from "lucide-react";
+import { EditTaskForm } from "./EditTaskForm";
 
 type ViewType = "timeline" | "kanban" | "table";
 
 interface TaskViewsProps {
   tasks?: Task[];
+  onTasksChange?: (tasks: Task[]) => void;
 }
 
-export const TaskViews = ({ tasks = [] }: TaskViewsProps) => {
+export const TaskViews = ({ tasks = [], onTasksChange }: TaskViewsProps) => {
   const [activeView, setActiveView] = useState<ViewType>("timeline");
+  const [editingTask, setEditingTask] = useState<Task | null>(null);
 
   // Default tasks if none provided
   const defaultTasks: Task[] = [
@@ -48,6 +53,54 @@ export const TaskViews = ({ tasks = [] }: TaskViewsProps) => {
 
   const displayTasks = tasks.length > 0 ? tasks : defaultTasks;
 
+  const handleDeleteTask = (taskId: string) => {
+    const updatedTasks = displayTasks.filter(task => task.id !== taskId);
+    if (onTasksChange) {
+      onTasksChange(updatedTasks);
+    }
+  };
+
+  const handleEditTask = (updatedTask: Task) => {
+    const updatedTasks = displayTasks.map(task => 
+      task.id === updatedTask.id ? updatedTask : task
+    );
+    if (onTasksChange) {
+      onTasksChange(updatedTasks);
+    }
+    setEditingTask(null);
+  };
+
+  const TaskActions = ({ task }: { task: Task }) => (
+    <div className="flex gap-1">
+      <Dialog>
+        <DialogTrigger asChild>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setEditingTask(task)}
+            className="h-7 w-7 p-0"
+          >
+            <Pencil className="h-3 w-3" />
+          </Button>
+        </DialogTrigger>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Task</DialogTitle>
+          </DialogHeader>
+          <EditTaskForm task={editingTask || task} onSave={handleEditTask} />
+        </DialogContent>
+      </Dialog>
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={() => handleDeleteTask(task.id)}
+        className="h-7 w-7 p-0 text-destructive hover:text-destructive"
+      >
+        <Trash2 className="h-3 w-3" />
+      </Button>
+    </div>
+  );
+
   const renderTimelineView = () => (
     <div className="space-y-4">
       <div className="border-l-2 border-primary pl-4 space-y-4">
@@ -57,8 +110,11 @@ export const TaskViews = ({ tasks = [] }: TaskViewsProps) => {
               task.status === "In Progress" ? "bg-primary" : "bg-muted"
             }`}></div>
             <div className="bg-surface-elevated p-4 rounded-lg border">
-              <h4 className="font-medium text-text-primary">{task.title}</h4>
-              <p className="text-sm text-text-secondary mt-1">
+              <div className="flex justify-between items-start mb-2">
+                <h4 className="font-medium text-text-primary">{task.title}</h4>
+                <TaskActions task={task} />
+              </div>
+              <p className="text-sm text-text-secondary">
                 Due: {task.dueDate} | {task.assignee} | {task.timeEstimate}
               </p>
             </div>
@@ -80,8 +136,11 @@ export const TaskViews = ({ tasks = [] }: TaskViewsProps) => {
           <div className="space-y-2">
             {todoTasks.map(task => (
               <div key={task.id} className="bg-surface-elevated p-3 rounded-lg border">
-                <p className="text-sm font-medium">{task.title}</p>
-                <p className="text-xs text-text-secondary mt-1">{task.priority} priority | {task.assignee}</p>
+                <div className="flex justify-between items-start mb-1">
+                  <p className="text-sm font-medium">{task.title}</p>
+                  <TaskActions task={task} />
+                </div>
+                <p className="text-xs text-text-secondary">{task.priority} priority | {task.assignee}</p>
               </div>
             ))}
           </div>
@@ -91,8 +150,11 @@ export const TaskViews = ({ tasks = [] }: TaskViewsProps) => {
           <div className="space-y-2">
             {inProgressTasks.map(task => (
               <div key={task.id} className="bg-surface-elevated p-3 rounded-lg border">
-                <p className="text-sm font-medium">{task.title}</p>
-                <p className="text-xs text-text-secondary mt-1">{task.assignee} | Due: {task.dueDate}</p>
+                <div className="flex justify-between items-start mb-1">
+                  <p className="text-sm font-medium">{task.title}</p>
+                  <TaskActions task={task} />
+                </div>
+                <p className="text-xs text-text-secondary">{task.assignee} | Due: {task.dueDate}</p>
               </div>
             ))}
           </div>
@@ -102,8 +164,11 @@ export const TaskViews = ({ tasks = [] }: TaskViewsProps) => {
           <div className="space-y-2">
             {doneTasks.map(task => (
               <div key={task.id} className="bg-surface-elevated p-3 rounded-lg border">
-                <p className="text-sm font-medium">{task.title}</p>
-                <p className="text-xs text-text-secondary mt-1">Completed | {task.assignee}</p>
+                <div className="flex justify-between items-start mb-1">
+                  <p className="text-sm font-medium">{task.title}</p>
+                  <TaskActions task={task} />
+                </div>
+                <p className="text-xs text-text-secondary">Completed | {task.assignee}</p>
               </div>
             ))}
           </div>
@@ -131,6 +196,7 @@ export const TaskViews = ({ tasks = [] }: TaskViewsProps) => {
             <th className="text-left py-3 px-2 font-medium text-text-primary">Status</th>
             <th className="text-left py-3 px-2 font-medium text-text-primary">Due Date</th>
             <th className="text-left py-3 px-2 font-medium text-text-primary">Time Est.</th>
+            <th className="text-left py-3 px-2 font-medium text-text-primary">Actions</th>
           </tr>
         </thead>
         <tbody>
@@ -145,6 +211,9 @@ export const TaskViews = ({ tasks = [] }: TaskViewsProps) => {
               </td>
               <td className="py-3 px-2 text-text-secondary">{task.dueDate}</td>
               <td className="py-3 px-2 text-text-secondary">{task.timeEstimate}</td>
+              <td className="py-3 px-2">
+                <TaskActions task={task} />
+              </td>
             </tr>
           ))}
         </tbody>
