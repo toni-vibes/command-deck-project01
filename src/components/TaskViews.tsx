@@ -264,6 +264,60 @@ export const TaskViews = ({ tasks = [], onTasksChange }: TaskViewsProps) => {
   );
 
   const renderTimelineView = () => {
+    console.log("Rendering timeline view...");
+    console.log("Display tasks:", displayTasks);
+    
+    // If no tasks, show the default view with current month
+    if (displayTasks.length === 0) {
+      const today = new Date();
+      const currentMonth = startOfMonth(today);
+      const nextMonth = startOfMonth(addDays(today, 32));
+      const months = [currentMonth, nextMonth];
+      
+      return (
+        <div className="space-y-4">
+          <div className="bg-surface-elevated border border-border rounded-lg overflow-hidden">
+            <div className="flex">
+              <div className="w-80 bg-muted border-r border-border flex-shrink-0">
+                <div className="p-4 border-b border-border">
+                  <div className="font-medium text-text-primary">Tasks</div>
+                  <div className="text-xs text-text-secondary">0 records</div>
+                </div>
+                <div className="max-h-96 overflow-y-auto">
+                  <div className="p-8 text-center text-text-secondary">
+                    No tasks currently. Generate and implement a plan to see tasks here.
+                  </div>
+                </div>
+              </div>
+
+              <ScrollArea className="flex-1">
+                <div style={{ width: 400 }} className="relative">
+                  <div className="flex border-b border-border bg-muted">
+                    {months.map((month, index) => (
+                      <div key={index} className="w-[200px] p-4 border-r border-border/30 text-center">
+                        <div className="font-medium text-text-primary">
+                          {format(month, 'MMMM')}
+                        </div>
+                        <div className="text-xs text-text-secondary">
+                          {format(month, 'yyyy')}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="relative bg-surface h-32">
+                    <div className="flex items-center justify-center h-full text-text-secondary">
+                      Timeline will appear when tasks are added
+                    </div>
+                  </div>
+                </div>
+                <ScrollBar orientation="horizontal" />
+              </ScrollArea>
+            </div>
+          </div>
+        </div>
+      );
+    }
+    
     // Helper function to parse task dates with fallbacks
     const parseTaskDate = (dueDate: string) => {
       const today = new Date();
@@ -729,13 +783,7 @@ export const TaskViews = ({ tasks = [], onTasksChange }: TaskViewsProps) => {
           </div>
           
           <div className="min-h-[300px]">
-            {displayTasks.length === 0 ? (
-              <div className="flex items-center justify-center h-[300px] text-text-secondary">
-                No tasks currently. Generate and implement a plan to see tasks here.
-              </div>
-            ) : (
-              renderActiveView()
-            )}
+            {renderActiveView()}
           </div>
         </div>
       </Card>
