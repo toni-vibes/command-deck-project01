@@ -12,7 +12,16 @@ const Index = () => {
   useEffect(() => {
     const savedTasks = localStorage.getItem('currentTasks');
     if (savedTasks) {
-      setImplementedTasks(JSON.parse(savedTasks));
+      try {
+        const parsedTasks = JSON.parse(savedTasks);
+        // Only set tasks if it's a non-empty array
+        if (Array.isArray(parsedTasks) && parsedTasks.length > 0) {
+          setImplementedTasks(parsedTasks);
+        }
+      } catch (error) {
+        // Clear invalid data
+        localStorage.removeItem('currentTasks');
+      }
     }
   }, []);
 
