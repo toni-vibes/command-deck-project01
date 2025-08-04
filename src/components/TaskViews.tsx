@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { EditTaskForm } from "./EditTaskForm";
 import { AddTaskForm } from "./AddTaskForm";
 import { SortableTaskCard } from "./SortableTaskCard";
+import { DroppableColumn } from "./DroppableColumn";
 import { useNavigate } from "react-router-dom";
 import {
   DndContext,
@@ -18,6 +19,10 @@ import {
   useSensor,
   useSensors,
   DragEndEvent,
+  DragOverEvent,
+  DragOverlay,
+  DragStartEvent,
+  useDroppable,
 } from "@dnd-kit/core";
 import {
   arrayMove,
@@ -25,10 +30,6 @@ import {
   sortableKeyboardCoordinates,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
-import {
-  useSortable,
-} from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
 
 type ViewType = "timeline" | "kanban" | "table";
 
@@ -44,9 +45,14 @@ export const TaskViews = ({ tasks = [], onTasksChange }: TaskViewsProps) => {
   const [showAddTask, setShowAddTask] = useState(false);
   const [viewingTask, setViewingTask] = useState<Task | null>(null);
   const [removingTasks, setRemovingTasks] = useState<Set<string>>(new Set());
+  const [activeTask, setActiveTask] = useState<Task | null>(null);
 
   const sensors = useSensors(
-    useSensor(PointerSensor),
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    }),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
     })
@@ -164,8 +170,53 @@ export const TaskViews = ({ tasks = [], onTasksChange }: TaskViewsProps) => {
     }
   };
 
+  const handleDragStart = (event: DragStartEvent) => {
+    const { active } = event;
+    const task = displayTasks.find(task => task.id === active.id);
+    setActiveTask(task || null);
+  };
+
+  const handleDragOver = (event: DragOverEvent) => {
+    const { active, over } = event;
+    
+    if (!over) return;
+
+    const activeId = active.id as string;
+    const overId = over.id as string;
+
+    // Find the active task
+    const activeTask = displayTasks.find(task => task.id === activeId);
+    if (!activeTask) return;
+
+    // Check if we're over a droppable column
+    const overStatus = overId as Task["status"];
+    if (["To Do", "In Progress", "Done"].includes(overStatus)) {
+      // If the task is not already in this status, move it
+      if (activeTask.status !== overStatus) {
+        const updatedTasks = displayTasks.map(task => 
+          task.id === activeId ? { ...task, status: overStatus } : task
+        );
+        if (onTasksChange) {
+          onTasksChange(updatedTasks);
+        }
+      }
+    } else {
+      // We're over another task, check if we should change status
+      const overTask = displayTasks.find(task => task.id === overId);
+      if (overTask && activeTask.status !== overTask.status) {
+        const updatedTasks = displayTasks.map(task => 
+          task.id === activeId ? { ...task, status: overTask.status } : task
+        );
+        if (onTasksChange) {
+          onTasksChange(updatedTasks);
+        }
+      }
+    }
+  };
+
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
+    setActiveTask(null);
 
     if (!over) return;
 
@@ -174,44 +225,40 @@ export const TaskViews = ({ tasks = [], onTasksChange }: TaskViewsProps) => {
 
     // Find tasks
     const activeTask = displayTasks.find(task => task.id === activeId);
-
     if (!activeTask) return;
 
-    // Check if we're dropping over a column header or task
-    let targetStatus: Task["status"] | null = null;
-    
-    // If dropping over a task, get its status
-    const overTask = displayTasks.find(task => task.id === overId);
-    if (overTask) {
-      targetStatus = overTask.status;
-    } else {
-      // If dropping over column area, determine status from drop zone
-      const dropZone = over.data?.current?.sortable?.containerId;
-      if (dropZone === "To Do" || dropZone === "In Progress" || dropZone === "Done") {
-        targetStatus = dropZone as Task["status"];
+    // Check if we're dropping over a column or task
+    const overStatus = overId as Task["status"];
+    if (["To Do", "In Progress", "Done"].includes(overStatus)) {
+      // Dropping on a column
+      if (activeTask.status !== overStatus) {
+        if (overStatus === "Done") {
+          handleStatusChange(activeId, overStatus);
+        } else {
+          const updatedTasks = displayTasks.map(task => 
+            task.id === activeId ? { ...task, status: overStatus } : task
+          );
+          if (onTasksChange) {
+            onTasksChange(updatedTasks);
+          }
+        }
       }
-    }
-
-    if (!targetStatus) return;
-
-    // If status changed, update the task status
-    if (activeTask.status !== targetStatus) {
-      handleStatusChange(activeId, targetStatus);
     } else {
-      // If dropping in the same status, reorder
-      const tasksInStatus = displayTasks.filter(task => task.status === activeTask.status);
-      const oldIndex = tasksInStatus.findIndex(task => task.id === activeId);
-      const newIndex = tasksInStatus.findIndex(task => task.id === overId);
+      // Dropping on another task - handle reordering
+      const overTask = displayTasks.find(task => task.id === overId);
+      if (overTask && activeTask.status === overTask.status) {
+        const tasksInStatus = displayTasks.filter(task => task.status === activeTask.status);
+        const oldIndex = tasksInStatus.findIndex(task => task.id === activeId);
+        const newIndex = tasksInStatus.findIndex(task => task.id === overId);
 
-      if (oldIndex !== newIndex) {
-        const reorderedTasks = arrayMove(tasksInStatus, oldIndex, newIndex);
-        
-        // Rebuild the full task list with reordered tasks
-        const otherTasks = displayTasks.filter(task => task.status !== activeTask.status);
-        const updatedTasks = [...otherTasks, ...reorderedTasks];
+        if (oldIndex !== newIndex) {
+          const reorderedTasks = arrayMove(tasksInStatus, oldIndex, newIndex);
+          const otherTasks = displayTasks.filter(task => task.status !== activeTask.status);
+          const updatedTasks = [...otherTasks, ...reorderedTasks];
 
-        if (onTasksChange) {
-          onTasksChange(updatedTasks);
+          if (onTasksChange) {
+            onTasksChange(updatedTasks);
+          }
         }
       }
     }
@@ -298,70 +345,69 @@ export const TaskViews = ({ tasks = [], onTasksChange }: TaskViewsProps) => {
       <DndContext 
         sensors={sensors}
         collisionDetection={closestCenter}
+        onDragStart={handleDragStart}
+        onDragOver={handleDragOver}
         onDragEnd={handleDragEnd}
       >
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="space-y-3">
-            <h4 className="font-medium text-text-primary">To Do</h4>
+          <DroppableColumn id="To Do" title="To Do">
             <SortableContext items={todoTasks.map(task => task.id)} strategy={verticalListSortingStrategy}>
-              <div 
-                className="space-y-2 min-h-[200px] p-3 border-2 border-dashed border-border/30 rounded-lg transition-colors"
-                data-status="To Do"
-              >
-                {todoTasks.map(task => (
-                  <SortableTaskCard
-                    key={task.id}
-                    task={task}
-                    onEdit={setEditingTask}
-                    onDelete={handleDeleteTask}
-                    onView={setViewingTask}
-                    removingTasks={removingTasks}
-                  />
-                ))}
-              </div>
+              {todoTasks.map(task => (
+                <SortableTaskCard
+                  key={task.id}
+                  task={task}
+                  onEdit={setEditingTask}
+                  onDelete={handleDeleteTask}
+                  onView={setViewingTask}
+                  removingTasks={removingTasks}
+                />
+              ))}
             </SortableContext>
-          </div>
-          <div className="space-y-3">
-            <h4 className="font-medium text-text-primary">In Progress</h4>
+          </DroppableColumn>
+
+          <DroppableColumn id="In Progress" title="In Progress">
             <SortableContext items={inProgressTasks.map(task => task.id)} strategy={verticalListSortingStrategy}>
-              <div 
-                className="space-y-2 min-h-[200px] p-3 border-2 border-dashed border-border/30 rounded-lg transition-colors"
-                data-status="In Progress"
-              >
-                {inProgressTasks.map(task => (
-                  <SortableTaskCard
-                    key={task.id}
-                    task={task}
-                    onEdit={setEditingTask}
-                    onDelete={handleDeleteTask}
-                    onView={setViewingTask}
-                    removingTasks={removingTasks}
-                  />
-                ))}
-              </div>
+              {inProgressTasks.map(task => (
+                <SortableTaskCard
+                  key={task.id}
+                  task={task}
+                  onEdit={setEditingTask}
+                  onDelete={handleDeleteTask}
+                  onView={setViewingTask}
+                  removingTasks={removingTasks}
+                />
+              ))}
             </SortableContext>
-          </div>
-          <div className="space-y-3">
-            <h4 className="font-medium text-text-primary">Done</h4>
+          </DroppableColumn>
+
+          <DroppableColumn id="Done" title="Done">
             <SortableContext items={doneTasks.map(task => task.id)} strategy={verticalListSortingStrategy}>
-              <div 
-                className="space-y-2 min-h-[200px] p-3 border-2 border-dashed border-border/30 rounded-lg transition-colors"
-                data-status="Done"
-              >
-                {doneTasks.map(task => (
-                  <SortableTaskCard
-                    key={task.id}
-                    task={task}
-                    onEdit={setEditingTask}
-                    onDelete={handleDeleteTask}
-                    onView={setViewingTask}
-                    removingTasks={removingTasks}
-                  />
-                ))}
-              </div>
+              {doneTasks.map(task => (
+                <SortableTaskCard
+                  key={task.id}
+                  task={task}
+                  onEdit={setEditingTask}
+                  onDelete={handleDeleteTask}
+                  onView={setViewingTask}
+                  removingTasks={removingTasks}
+                />
+              ))}
             </SortableContext>
-          </div>
+          </DroppableColumn>
         </div>
+
+        <DragOverlay>
+          {activeTask ? (
+            <div className="bg-surface-elevated p-3 rounded-lg border shadow-lg opacity-90 rotate-2">
+              <p className="text-sm font-medium">{activeTask.title}</p>
+              <p className="text-xs text-text-secondary">
+                {activeTask.status === "To Do" ? `${activeTask.priority} priority | ${activeTask.assignee}` :
+                 activeTask.status === "In Progress" ? `${activeTask.assignee} | Due: ${activeTask.dueDate}` :
+                 `Completed | ${activeTask.assignee}`}
+              </p>
+            </div>
+          ) : null}
+        </DragOverlay>
       </DndContext>
     );
   };

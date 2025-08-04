@@ -39,9 +39,9 @@ export const SortableTaskCard = ({
       style={style}
       {...attributes}
       {...listeners}
-      className={`bg-surface-elevated p-3 rounded-lg border cursor-pointer hover:bg-surface-elevated/80 transition-all duration-200 transform ${
+      className={`bg-surface-elevated p-3 rounded-lg border cursor-grab hover:bg-surface-elevated/80 transition-all duration-200 transform ${
         removingTasks.has(task.id) ? 'opacity-0 scale-95 translate-y-2' : 'opacity-100 scale-100 translate-y-0'
-      } ${isDragging ? 'opacity-70 scale-105 rotate-2 shadow-lg' : ''}`}
+      } ${isDragging ? 'opacity-80 scale-105 rotate-1 shadow-lg cursor-grabbing z-50' : 'hover:scale-[1.02]'}`}
       onClick={() => onView(task)}
     >
       <div className="flex justify-between items-start mb-1">
