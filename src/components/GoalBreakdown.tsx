@@ -251,30 +251,31 @@ export const GoalBreakdown = ({ onPlanImplemented, currentTasks = [] }: GoalBrea
       <h2 className="text-xl font-medium text-text-primary">Set Your Mission</h2>
       
       <div className="space-y-4">
-        <div className="relative">
-          <Textarea
-            placeholder="Describe your big goal..."
-            value={goal}
-            onChange={(e) => setGoal(e.target.value)}
-            className="min-h-[120px] resize-none bg-surface border-border text-base pr-24"
-          />
+        <Textarea
+          placeholder="Describe your big goal..."
+          value={goal}
+          onChange={(e) => setGoal(e.target.value)}
+          className="min-h-[120px] resize-none bg-surface border-border text-base"
+        />
+        
+        <div className="flex justify-between items-center">
+          <Button 
+            onClick={handleGeneratePlan}
+            disabled={!goal.trim()}
+            className="bg-primary text-primary-foreground hover:bg-primary/90"
+          >
+            Generate Plan
+          </Button>
+          
           <Button 
             variant="ghost"
             size="sm"
             onClick={() => setShowRecalibrateDialog(true)}
-            className="absolute top-3 right-3 text-text-secondary hover:text-text-primary hover:bg-muted/50 text-sm"
+            className="text-text-secondary hover:text-text-primary hover:bg-muted/50 text-sm"
           >
             Recalibrate
           </Button>
         </div>
-        
-        <Button 
-          onClick={handleGeneratePlan}
-          disabled={!goal.trim()}
-          className="bg-primary text-primary-foreground hover:bg-primary/90"
-        >
-          Generate Plan
-        </Button>
       </div>
 
       {(planGenerated || generatedTasks.length > 0) && (
