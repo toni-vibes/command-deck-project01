@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { Menu } from "lucide-react";
 import { GoalBreakdown } from "@/components/GoalBreakdown";
 import { TaskViews } from "@/components/TaskViews";
 import { TeamWorkload } from "@/components/TeamWorkload";
@@ -58,10 +59,14 @@ const Index = () => {
     <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="border-b border-divider bg-surface">
-        <div className="max-w-7xl mx-auto px-6 py-6">
-          <div className="flex justify-between items-center">
-            <h1 className="text-2xl font-semibold text-text-primary">Command Deck</h1>
-            <ActionButtons />
+        <div className="max-w-7xl mx-auto px-6 py-8">
+          <div className="flex justify-between items-start">
+            <Menu className="h-6 w-6 text-text-secondary" />
+            <div className="flex-1 text-center">
+              <h1 className="text-3xl font-semibold text-text-primary mb-2">Command Deck</h1>
+              <p className="text-text-secondary">Monitor and manage your project progress in real-time</p>
+            </div>
+            <div className="w-6"></div> {/* Spacer for balance */}
           </div>
         </div>
       </header>
@@ -69,6 +74,11 @@ const Index = () => {
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-6 py-8">
         <div className="space-y-12">
+          {/* Action Buttons */}
+          <div className="flex justify-end">
+            <ActionButtons />
+          </div>
+
           {/* Section 1: Goal Breakdown */}
           <GoalBreakdown onPlanImplemented={handlePlanImplemented} currentTasks={implementedTasks} />
 
