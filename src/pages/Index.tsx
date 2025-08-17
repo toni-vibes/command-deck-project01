@@ -3,7 +3,6 @@ import { Menu } from "lucide-react";
 import { GoalBreakdown } from "@/components/GoalBreakdown";
 import { TaskViews } from "@/components/TaskViews";
 import { TeamWorkload } from "@/components/TeamWorkload";
-import { ActionButtons } from "@/components/ActionButtons";
 import { Task } from "@/types/task";
 
 const Index = () => {
@@ -58,25 +57,19 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="border-b border-divider bg-surface">
-        <div className="max-w-7xl mx-auto px-6 py-8">
-          <div className="flex justify-between items-start">
-            <Menu className="h-6 w-6 text-text-secondary" />
-            <div className="flex-1 text-center">
-              <h1 className="text-3xl font-semibold text-text-primary mb-2">Command Deck</h1>
-              <p className="text-text-secondary">Monitor and manage your project progress in real-time</p>
-            </div>
-            <div className="w-6"></div> {/* Spacer for balance */}
-          </div>
+      <header className="bg-background">
+        <div className="max-w-7xl mx-auto px-6 py-6">
+          <Menu className="h-6 w-6 text-text-secondary" />
         </div>
       </header>
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-6 py-8">
         <div className="space-y-12">
-          {/* Action Buttons */}
-          <div className="flex justify-end">
-            <ActionButtons />
+          {/* Page Title */}
+          <div className="text-center mb-16">
+            <h1 className="text-4xl font-semibold text-text-primary mb-4">Command Deck</h1>
+            <p className="text-text-secondary text-lg">Monitor and manage your project progress in real-time</p>
           </div>
 
           {/* Section 1: Goal Breakdown */}

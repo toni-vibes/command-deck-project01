@@ -247,13 +247,26 @@ export const GoalBreakdown = ({ onPlanImplemented, currentTasks = [] }: GoalBrea
           className="min-h-[120px] resize-none bg-surface border-border text-base"
         />
         
-        <Button 
-          onClick={handleGeneratePlan}
-          disabled={!goal.trim()}
-          className="bg-primary text-primary-foreground hover:bg-primary/90"
-        >
-          Generate Plan
-        </Button>
+        <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
+          <Button 
+            onClick={handleGeneratePlan}
+            disabled={!goal.trim()}
+            className="bg-primary text-primary-foreground hover:bg-primary/90"
+          >
+            Generate Plan
+          </Button>
+          
+          <Button 
+            variant="outline"
+            className="bg-surface border-border text-text-primary hover:bg-muted"
+            onClick={() => {
+              // Navigate to recalibrate screen
+              console.log("Navigate to Recalibrate");
+            }}
+          >
+            Recalibrate
+          </Button>
+        </div>
       </div>
 
       {(planGenerated || generatedTasks.length > 0) && (
