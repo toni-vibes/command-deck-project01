@@ -13,6 +13,7 @@ import { Pencil, Trash2 } from "lucide-react";
 import { EditTaskForm } from "./EditTaskForm";
 import { AddTaskForm } from "./AddTaskForm";
 import { Plus } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 interface GoalBreakdownProps {
   onPlanImplemented?: (tasks: Task[]) => void;
@@ -26,6 +27,8 @@ export const GoalBreakdown = ({ onPlanImplemented, currentTasks = [] }: GoalBrea
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [showAddTask, setShowAddTask] = useState(false);
   const [showOverwriteWarning, setShowOverwriteWarning] = useState(false);
+  const [showRecalibrateDialog, setShowRecalibrateDialog] = useState(false);
+  const { toast } = useToast();
 
   const generateTasksFromGoal = (goalText: string): Task[] => {
     // Simple goal analysis to generate tasks
@@ -226,6 +229,14 @@ export const GoalBreakdown = ({ onPlanImplemented, currentTasks = [] }: GoalBrea
     setShowAddTask(false);
   };
 
+  const handleRecalibrate = () => {
+    setShowRecalibrateDialog(false);
+    toast({
+      title: "Feature Coming Soon",
+      description: "Project recalibration feature is currently in development and will be available soon.",
+    });
+  };
+
   const getPriorityColor = (priority: string) => {
     switch (priority) {
       case "High": return "bg-destructive/10 text-destructive border-destructive/20";
@@ -240,33 +251,30 @@ export const GoalBreakdown = ({ onPlanImplemented, currentTasks = [] }: GoalBrea
       <h2 className="text-xl font-medium text-text-primary">Set Your Mission</h2>
       
       <div className="space-y-4">
-        <Textarea
-          placeholder="Describe your big goal..."
-          value={goal}
-          onChange={(e) => setGoal(e.target.value)}
-          className="min-h-[120px] resize-none bg-surface border-border text-base"
-        />
-        
-        <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
+        <div className="relative">
+          <Textarea
+            placeholder="Describe your big goal..."
+            value={goal}
+            onChange={(e) => setGoal(e.target.value)}
+            className="min-h-[120px] resize-none bg-surface border-border text-base pr-24"
+          />
           <Button 
-            onClick={handleGeneratePlan}
-            disabled={!goal.trim()}
-            className="bg-primary text-primary-foreground hover:bg-primary/90"
-          >
-            Generate Plan
-          </Button>
-          
-          <Button 
-            variant="outline"
-            className="bg-surface border-border text-text-primary hover:bg-muted"
-            onClick={() => {
-              // Navigate to recalibrate screen
-              console.log("Navigate to Recalibrate");
-            }}
+            variant="ghost"
+            size="sm"
+            onClick={() => setShowRecalibrateDialog(true)}
+            className="absolute top-3 right-3 text-text-secondary hover:text-text-primary hover:bg-muted/50 text-sm"
           >
             Recalibrate
           </Button>
         </div>
+        
+        <Button 
+          onClick={handleGeneratePlan}
+          disabled={!goal.trim()}
+          className="bg-primary text-primary-foreground hover:bg-primary/90"
+        >
+          Generate Plan
+        </Button>
       </div>
 
       {(planGenerated || generatedTasks.length > 0) && (
@@ -393,6 +401,25 @@ export const GoalBreakdown = ({ onPlanImplemented, currentTasks = [] }: GoalBrea
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={proceedWithImplementation}>
               Yes, Overwrite Plan
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Recalibrate Confirmation Dialog */}
+      <AlertDialog open={showRecalibrateDialog} onOpenChange={setShowRecalibrateDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Change Project Course?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Do you want to completely change the course of your current project? This will help you 
+              redefine your goals and create a new strategic direction.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleRecalibrate}>
+              Yes, Recalibrate
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
